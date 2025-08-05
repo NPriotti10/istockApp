@@ -1,0 +1,165 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Proyects\\istock\\back\\istockBack\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istock\\back\\istockback\\services\\ventabackupservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:services\\ventabackupservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istock\\back\\istockback\\services\\backuphostedservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:services\\backuphostedservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istock\\back\\istockback\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istock\\back\\istockback\\models\\venta.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:models\\venta.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istock\\back\\istockback\\models\\itemventa.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:models\\itemventa.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istock\\back\\istockback\\controllers\\ventacontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:controllers\\ventacontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istock\\back\\istockback\\dtos\\ventadto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:dtos\\ventadto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istock\\back\\istockback\\dtos\\itemventadto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:dtos\\itemventadto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istock\\back\\istockback\\migrations\\20250805194649_addcamposventaextras.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:migrations\\20250805194649_addcamposventaextras.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Proyects\\istock\\back\\istockBack\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Proyects\\istock\\back\\istockBack\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-05T22:01:01.522Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "VentaBackupService.cs",
+              "DocumentMoniker": "C:\\Proyects\\istock\\back\\istockBack\\Services\\VentaBackupService.cs",
+              "RelativeDocumentMoniker": "Services\\VentaBackupService.cs",
+              "ToolTip": "C:\\Proyects\\istock\\back\\istockBack\\Services\\VentaBackupService.cs",
+              "RelativeToolTip": "Services\\VentaBackupService.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAIwCQAAAA0AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-05T21:56:21.461Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "BackupHostedService.cs",
+              "DocumentMoniker": "C:\\Proyects\\istock\\back\\istockBack\\Services\\BackupHostedService.cs",
+              "RelativeDocumentMoniker": "Services\\BackupHostedService.cs",
+              "ToolTip": "C:\\Proyects\\istock\\back\\istockBack\\Services\\BackupHostedService.cs",
+              "RelativeToolTip": "Services\\BackupHostedService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-05T21:56:00.67Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "20250805194649_AddCamposVentaExtras.cs",
+              "DocumentMoniker": "C:\\Proyects\\istock\\back\\istockBack\\Migrations\\20250805194649_AddCamposVentaExtras.cs",
+              "RelativeDocumentMoniker": "Migrations\\20250805194649_AddCamposVentaExtras.cs",
+              "ToolTip": "C:\\Proyects\\istock\\back\\istockBack\\Migrations\\20250805194649_AddCamposVentaExtras.cs",
+              "RelativeToolTip": "Migrations\\20250805194649_AddCamposVentaExtras.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-05T19:46:49.873Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "ItemVentaDto.cs",
+              "DocumentMoniker": "C:\\Proyects\\istock\\back\\istockBack\\DTOs\\ItemVentaDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\ItemVentaDto.cs",
+              "ToolTip": "C:\\Proyects\\istock\\back\\istockBack\\DTOs\\ItemVentaDto.cs",
+              "RelativeToolTip": "DTOs\\ItemVentaDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-05T19:45:24.396Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "VentaDto.cs",
+              "DocumentMoniker": "C:\\Proyects\\istock\\back\\istockBack\\DTOs\\VentaDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\VentaDto.cs",
+              "ToolTip": "C:\\Proyects\\istock\\back\\istockBack\\DTOs\\VentaDto.cs",
+              "RelativeToolTip": "DTOs\\VentaDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-05T19:45:10.706Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "VentaController.cs",
+              "DocumentMoniker": "C:\\Proyects\\istock\\back\\istockBack\\Controllers\\VentaController.cs",
+              "RelativeDocumentMoniker": "Controllers\\VentaController.cs",
+              "ToolTip": "C:\\Proyects\\istock\\back\\istockBack\\Controllers\\VentaController.cs",
+              "RelativeToolTip": "Controllers\\VentaController.cs",
+              "ViewState": "AgIAAMkAAAAAAAAAAAAuwOkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-05T19:43:50.333Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Venta.cs",
+              "DocumentMoniker": "C:\\Proyects\\istock\\back\\istockBack\\Models\\Venta.cs",
+              "RelativeDocumentMoniker": "Models\\Venta.cs",
+              "ToolTip": "C:\\Proyects\\istock\\back\\istockBack\\Models\\Venta.cs",
+              "RelativeToolTip": "Models\\Venta.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-05T19:42:52.787Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ItemVenta.cs",
+              "DocumentMoniker": "C:\\Proyects\\istock\\back\\istockBack\\Models\\ItemVenta.cs",
+              "RelativeDocumentMoniker": "Models\\ItemVenta.cs",
+              "ToolTip": "C:\\Proyects\\istock\\back\\istockBack\\Models\\ItemVenta.cs",
+              "RelativeToolTip": "Models\\ItemVenta.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-02T16:52:52.961Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

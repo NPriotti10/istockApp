@@ -1,0 +1,201 @@
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+
+namespace istockBack.Models;
+
+public partial class IstockDbContext : DbContext
+{
+    public IstockDbContext()
+    {
+    }
+
+    public IstockDbContext(DbContextOptions<IstockDbContext> options)
+        : base(options)
+    {
+    }
+
+    public virtual DbSet<Categoria> Categoria { get; set; }
+
+    public virtual DbSet<Compra> Compra { get; set; }
+
+    public virtual DbSet<ItemCompra> ItemCompra { get; set; }
+
+    public virtual DbSet<ItemVenta> ItemVenta { get; set; }
+
+    public virtual DbSet<Producto> Productos { get; set; }
+
+    public virtual DbSet<Proveedor> Proveedor { get; set; }
+
+    public virtual DbSet<Venta> Venta { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Categoria>(entity =>
+        {
+            entity.HasKey(e => e.IdCategoria).HasName("PK__Categori__8A3D240C8DF57A7A");
+
+            entity.Property(e => e.IdCategoria).HasColumnName("idCategoria");
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(50)
+                .HasColumnName("nombre");
+        });
+
+        modelBuilder.Entity<Compra>(entity =>
+        {
+            entity.HasKey(e => e.IdCompra).HasName("PK__Compra__48B99DB7A18C3C77");
+
+            entity.ToTable("Compra");
+
+            entity.Property(e => e.IdCompra).HasColumnName("idCompra");
+            entity.Property(e => e.Fecha)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("fecha");
+            entity.Property(e => e.IdProveedor).HasColumnName("idProveedor");
+            entity.Property(e => e.PrecioCosto)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("precioCosto");
+
+            entity.HasOne(d => d.IdProveedorNavigation).WithMany(p => p.Compras)
+                .HasForeignKey(d => d.IdProveedor)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Compra__idProvee__45F365D3");
+        });
+
+        modelBuilder.Entity<ItemCompra>(entity =>
+        {
+            entity.HasKey(e => e.IdItemCompra);
+
+            entity.Property(e => e.IdItemCompra).HasColumnName("idItemCompra");
+            entity.Property(e => e.IdProducto).HasColumnName("idProducto");
+            entity.Property(e => e.IdCompra).HasColumnName("idCompra");
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+            entity.Property(e => e.PrecioUnitario).HasColumnType("decimal(10, 2)").HasColumnName("precioUnitario");
+            entity.Property(e => e.PrecioTotal).HasColumnType("decimal(10, 2)").HasColumnName("precioTotal");
+
+            entity.HasOne(d => d.Producto)
+                .WithMany(p => p.ItemCompras)
+                .HasForeignKey(d => d.IdProducto)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            entity.HasOne(d => d.IdCompraNavigation)
+                .WithMany(p => p.ItemCompra)
+                .HasForeignKey(d => d.IdCompra)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+
+        modelBuilder.Entity<ItemVenta>(entity =>
+        {
+            entity.HasKey(e => e.IdItemVenta);
+
+            entity.Property(e => e.IdItemVenta).HasColumnName("idItemVenta");
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+            entity.Property(e => e.IdProducto).HasColumnName("idProducto");
+            entity.Property(e => e.IdVenta).HasColumnName("idVenta");
+
+            entity.Property(e => e.PrecioUnitario)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("precioUnitario");
+
+            entity.Property(e => e.PrecioTotal)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("precioTotal");
+
+            entity.Property(e => e.Ganancia)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("ganancia");
+
+            // 👇 Acá definís la relación con Producto
+            entity.HasOne(d => d.Producto)
+                .WithMany(p => p.ItemVenta)
+                .HasForeignKey(d => d.IdProducto)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+
+            // 👇 También definís la relación con Venta
+            entity.HasOne(d => d.Venta)
+                .WithMany(p => p.ItemVenta)
+                .HasForeignKey(d => d.IdVenta)
+                .OnDelete(DeleteBehavior.ClientSetNull);
+        });
+
+
+
+        modelBuilder.Entity<Producto>(entity =>
+        {
+            entity.HasKey(e => e.IdProducto).HasName("PK__Producto__07F4A13281069226");
+
+            entity.ToTable("Producto");
+
+            entity.Property(e => e.IdProducto).HasColumnName("idProducto");
+            entity.Property(e => e.Descripcion)
+                .HasMaxLength(255)
+                .HasColumnName("descripcion");
+            entity.Property(e => e.IdCategoria).HasColumnName("idCategoria");
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(50)
+                .HasColumnName("nombre");
+            entity.Property(e => e.PrecioCosto)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("precioCosto");
+            entity.Property(e => e.PrecioVenta)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("precioVenta");
+            entity.Property(e => e.StockActual).HasColumnName("stockActual");
+            entity.Property(e => e.StockMinimo).HasColumnName("stockMinimo");
+            entity.HasOne(d => d.Categoria)
+                .WithMany(p => p.Productos)
+                .HasForeignKey(d => d.IdCategoria)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Producto_Categoria");
+
+
+        });
+
+        modelBuilder.Entity<Proveedor>(entity =>
+        {
+            entity.HasKey(e => e.IdProveedor).HasName("PK__Proveedo__A3FA8E6B1CD56ADC");
+
+            entity.ToTable("Proveedor");
+
+            entity.Property(e => e.IdProveedor).HasColumnName("idProveedor");
+            entity.Property(e => e.Contacto)
+                .HasMaxLength(100)
+                .HasColumnName("contacto");
+            entity.Property(e => e.Direccion)
+                .HasMaxLength(100)
+                .HasColumnName("direccion");
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(100)
+                .HasColumnName("nombre");
+        });
+
+        modelBuilder.Entity<Venta>(entity =>
+        {
+            entity.HasKey(e => e.IdVenta).HasName("PK__Venta__077D56142EEBE7DC");
+
+            entity.Property(e => e.IdVenta).HasColumnName("idVenta");
+            entity.Property(e => e.Cliente)
+                .HasMaxLength(100)
+                .HasColumnName("cliente");
+            entity.Property(e => e.Fecha)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("fecha");
+            entity.Property(e => e.FormaPago)
+                .HasMaxLength(50)
+                .HasColumnName("formaPago");
+            
+        });
+
+        OnModelCreatingPartial(modelBuilder);
+    }
+
+    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+}
