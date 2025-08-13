@@ -2,6 +2,32 @@
 using istockBack.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+#region Helpers/DTOs para paginación
+public class PagedResult<T>
+{
+    public List<T> Items { get; set; } = new();
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalPages { get; set; }
+    public int TotalItems { get; set; }
+}
+
+public class VentaListaDto
+{
+    public int IdVenta { get; set; }
+    public DateTime Fecha { get; set; }
+    public string? Cliente { get; set; }
+    public decimal PrecioTotal { get; set; }
+    public decimal GananciaTotal { get; set; }
+    public decimal ValorDolar { get; set; }
+    public string? EquipoPartePago { get; set; }
+}
+#endregion
 
 [ApiController]
 [Route("api/[controller]")]
@@ -12,6 +38,57 @@ public class VentasController : ControllerBase
     public VentasController(IstockDbContext context)
     {
         _context = context;
+    }
+
+    // NUEVO: GET: api/ventas/paged?page=1&pageSize=10&search=juan
+    [HttpGet("paged")]
+    public async Task<ActionResult<PagedResult<VentaListaDto>>> GetVentasPaged(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = "")
+    {
+        if (page <= 0) page = 1;
+        if (pageSize <= 0) pageSize = 10;
+
+        var query = _context.Venta
+            .AsNoTracking()
+            .OrderByDescending(v => v.Fecha)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.ToLower();
+            query = query.Where(v => v.Cliente != null && v.Cliente.ToLower().Contains(s));
+        }
+
+        var totalItems = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var ventas = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(v => new VentaListaDto
+            {
+                IdVenta = v.IdVenta,
+                Fecha = v.Fecha,
+                Cliente = v.Cliente,
+                PrecioTotal = v.PrecioTotal,
+                GananciaTotal = v.GananciaTotal,
+                ValorDolar = v.ValorDolar,
+                EquipoPartePago = v.EquipoPartePago
+            })
+            .ToListAsync();
+
+        var result = new PagedResult<VentaListaDto>
+        {
+            Items = ventas,
+            Page = page,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+            TotalPages = totalPages
+        };
+
+        return Ok(result);
     }
 
     // GET: api/ventas
@@ -38,6 +115,7 @@ public class VentasController : ControllerBase
                 iv.IdProducto,
                 NombreProducto = iv.Producto.Nombre,
                 iv.Cantidad,
+                iv.NumeroSerie,
                 iv.PrecioUnitario,
                 iv.PrecioTotal,
                 iv.Ganancia
@@ -74,6 +152,7 @@ public class VentasController : ControllerBase
                 iv.IdProducto,
                 NombreProducto = iv.Producto.Nombre,
                 iv.Cantidad,
+                iv.NumeroSerie,
                 iv.PrecioUnitario,
                 iv.PrecioTotal,
                 iv.Ganancia
@@ -84,7 +163,7 @@ public class VentasController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> RegistrarVenta(VentaDto ventaDto)
+    public async Task<IActionResult> RegistrarVenta([FromBody] VentaDto ventaDto)
     {
         if (ventaDto == null || ventaDto.Items == null || !ventaDto.Items.Any())
             return BadRequest("Datos de venta inválidos.");
@@ -97,8 +176,8 @@ public class VentasController : ControllerBase
             Cliente = ventaDto.Cliente,
             FormaPago = ventaDto.FormaPago,
             Fecha = ventaDto.Fecha ?? DateTime.Now,
-            ValorDolar = ventaDto.ValorDolar,                   // ✅ nuevo campo
-            EquipoPartePago = ventaDto.EquipoPartePago ?? "",   // ✅ nuevo campo
+            ValorDolar = ventaDto.ValorDolar,
+            EquipoPartePago = ventaDto.EquipoPartePago ?? "",
             ItemVenta = new List<ItemVenta>()
         };
 
@@ -108,7 +187,7 @@ public class VentasController : ControllerBase
             if (producto == null)
                 return NotFound($"Producto con ID {item.IdProducto} no encontrado.");
 
-            // ✅ Validación: stock suficiente
+            // Validación: stock suficiente
             if (producto.StockActual < item.Cantidad)
                 return BadRequest($"Stock insuficiente para el producto '{producto.Nombre}'. Stock disponible: {producto.StockActual}, requerido: {item.Cantidad}");
 
@@ -122,6 +201,7 @@ public class VentasController : ControllerBase
             {
                 IdProducto = item.IdProducto,
                 Cantidad = item.Cantidad,
+                NumeroSerie = item.NumeroSerie, // 👈 queda guardado por ítem
                 PrecioUnitario = precioUnitario,
                 PrecioTotal = subtotal,
                 Ganancia = utilidad
@@ -133,7 +213,6 @@ public class VentasController : ControllerBase
             // Actualiza stock
             producto.StockActual -= item.Cantidad;
         }
-
 
         nuevaVenta.PrecioTotal = total;
         nuevaVenta.GananciaTotal = ganancia;
@@ -202,37 +281,42 @@ public class VentasController : ControllerBase
     }
 
     [HttpGet("estadisticas")]
-    public async Task<IActionResult> GetEstadisticas()
+    public async Task<IActionResult> ObtenerEstadisticas()
     {
-        var hoy = DateTime.Now;
-        int diasDesdeLunes = (int)hoy.DayOfWeek - (int)DayOfWeek.Monday;
-        if (diasDesdeLunes < 0) diasDesdeLunes += 7;
-        var lunes = hoy.Date.AddDays(-diasDesdeLunes);
+        var hoy = DateTime.Today;
+        var inicioSemana = hoy.AddDays(-(int)hoy.DayOfWeek + 1); // lunes
         var inicioMes = new DateTime(hoy.Year, hoy.Month, 1);
 
         var ventas = await _context.Venta.ToListAsync();
 
-        var ventasSemanales = ventas.Where(v => v.Fecha.Date >= lunes).ToList();
-        var ventasMensuales = ventas.Where(v => v.Fecha.Date >= inicioMes).ToList();
+        var ventasSemanales = ventas.Where(v => v.Fecha >= inicioSemana).ToList();
+        var ventasMensuales = ventas.Where(v => v.Fecha >= inicioMes).ToList();
 
-        var gananciaSemanalUsd = ventasSemanales.Sum(v => v.GananciaTotal);
-        var gananciaMensualUsd = ventasMensuales.Sum(v => v.GananciaTotal);
+        var totalGastosFijos = await _context.GastoFijo.SumAsync(g => g.Monto);
 
-        var gananciaSemanalArs = ventasSemanales.Sum(v => v.GananciaTotal * v.ValorDolar);
-        var gananciaMensualArs = ventasMensuales.Sum(v => v.GananciaTotal * v.ValorDolar);
+        // Ganancias semanales
+        var gananciaSemanalUSD = ventasSemanales.Sum(v => v.GananciaTotal);
+        var gananciaSemanalARS = ventasSemanales.Sum(v => v.GananciaTotal * v.ValorDolar);
+
+        // Ganancias mensuales
+        var gananciaMensualUSD = ventasMensuales.Sum(v => v.GananciaTotal);
+        var gananciaMensualARS = ventasMensuales.Sum(v => v.GananciaTotal * v.ValorDolar);
+
+        // Descontar gastos fijos (en USD)
+        var gananciaMensualUSDNeta = gananciaMensualUSD - totalGastosFijos;
 
         return Ok(new
         {
-            VentasSemanales = ventasSemanales,
-            VentasMensuales = ventasMensuales,
-            GananciaSemanal = gananciaSemanalUsd,
-            GananciaMensual = gananciaMensualUsd,
-            GananciaSemanalArs = gananciaSemanalArs,
-            GananciaMensualArs = gananciaMensualArs
+            ventasSemanales,
+            ventasMensuales,
+            gananciaSemanalARS = Math.Round(gananciaSemanalARS, 2),
+            gananciaSemanalUSD = Math.Round(gananciaSemanalUSD, 2),
+            gananciaMensualARS = Math.Round(gananciaMensualARS, 2),
+            gananciaMensualUSD = Math.Round(gananciaMensualUSD, 2),
+            gananciaMensualUSDNeta = Math.Round(gananciaMensualUSDNeta),
+            totalGastosFijos = Math.Round(totalGastosFijos, 2)
         });
     }
-
-
 
     [HttpGet("bajostock")]
     public async Task<IActionResult> GetProductosBajoStock()
@@ -243,9 +327,4 @@ public class VentasController : ControllerBase
 
         return Ok(productos); // 👈 esto devuelve una lista (array)
     }
-
-
-
-
 }
-

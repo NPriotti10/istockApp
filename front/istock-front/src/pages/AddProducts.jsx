@@ -2,7 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { nuevoProduct } from "../services/products";
 import { getAllCategorias } from "../services/categorias";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
+
 
 export default function AddProduct() {
   const [form, setForm] = useState({
@@ -16,7 +18,9 @@ export default function AddProduct() {
   });
   const [categorias, setCategorias] = useState([]);
   const navigate = useNavigate();
-
+  const [searchParams] = useSearchParams();
+  const categoriaPredefinida = searchParams.get("categoria") || "";
+  const location = useLocation()
   useEffect(() => {
     getAllCategorias().then(setCategorias);
   }, []);
@@ -33,11 +37,23 @@ export default function AddProduct() {
     e.preventDefault();
     try {
       await nuevoProduct(form);
-      navigate("/productos"); // volver al listado
+       const params = new URLSearchParams(location.search);
+       const volver = params.get("redirectTo");
+
+      
+      if (volver) {
+      navigate(`${volver}?equipoPartePago=${encodeURIComponent(nombre)}`);
+    } else {
+      navigate("/productos");
+    }
+
     } catch (err) {
       console.error("Error al agregar producto:", err);
       alert("Ocurrió un error al guardar el producto.");
     }
+    
+    
+
   };
 
   return (
@@ -74,6 +90,8 @@ export default function AddProduct() {
           Stock Mínimo:
           <input type="number" name="stockMinimo" value={form.stockMinimo} onChange={handleChange} required />
         </label>
+        
+          
 
         <label>
           Categoría:

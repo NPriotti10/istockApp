@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Proyects\\istock\\back\\istockBack\\istockBack.csproj": {}
+    "C:\\Proyects\\istockApp\\back\\istockBack\\istockBack.csproj": {}
   },
   "projects": {
-    "C:\\Proyects\\istock\\back\\istockBack\\istockBack.csproj": {
+    "C:\\Proyects\\istockApp\\back\\istockBack\\istockBack.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Proyects\\istock\\back\\istockBack\\istockBack.csproj",
+        "projectUniqueName": "C:\\Proyects\\istockApp\\back\\istockBack\\istockBack.csproj",
         "projectName": "istockBack",
-        "projectPath": "C:\\Proyects\\istock\\back\\istockBack\\istockBack.csproj",
+        "projectPath": "C:\\Proyects\\istockApp\\back\\istockBack\\istockBack.csproj",
         "packagesPath": "C:\\Users\\Nico\\.nuget\\packages\\",
-        "outputPath": "C:\\Proyects\\istock\\back\\istockBack\\obj\\",
+        "outputPath": "C:\\Proyects\\istockApp\\back\\istockBack\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

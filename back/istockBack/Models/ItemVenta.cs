@@ -13,6 +13,7 @@ public class ItemVenta
     public int IdProducto { get; set; }
 
     public int Cantidad { get; set; }
+    public string? NumeroSerie { get; set; }
 
     public decimal PrecioUnitario { get; set; }
 
@@ -22,6 +23,8 @@ public class ItemVenta
 
     public decimal PrecioTotal { get; set; }  // antes era solo get
     public decimal Ganancia { get; set; }     // antes era solo get
+
+
 }
 
 

@@ -2,8 +2,8 @@
 {
     public class CompraDto
     {
-        public int IdProveedor { get; set; }
-        public DateTime Fecha { get; set; } = DateTime.Now;
+        public string? Proveedor { get; set; }
+        public DateTime? Fecha { get; set; }
         public List<ItemCompraDto> Items { get; set; } = new();
     }
 }

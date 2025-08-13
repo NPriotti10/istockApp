@@ -18,10 +18,41 @@ namespace istockBack.Controllers
 
         // GET: api/productos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProductoDto>>> GetProductos()
+        public async Task<ActionResult<PagedResultDto<ProductoDto>>> GetProductos(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] int? categoriaId = null)
         {
-            return await _context.Productos
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+
+            var query = _context.Productos
+                .AsNoTracking()
                 .Include(p => p.Categoria)
+                .AsQueryable();
+
+            // Filtros
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+                query = query.Where(p =>
+                    p.Nombre.Contains(search));
+            }
+
+            if (categoriaId.HasValue)
+            {
+                query = query.Where(p => p.IdCategoria == categoriaId.Value);
+            }
+
+            // Total antes de paginar
+            var total = await query.CountAsync();
+
+            // Página
+            var items = await query
+                .OrderBy(p => p.Nombre)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(p => new ProductoDto
                 {
                     IdProducto = p.IdProducto,
@@ -39,6 +70,14 @@ namespace istockBack.Controllers
                     }
                 })
                 .ToListAsync();
+
+            return Ok(new PagedResultDto<ProductoDto>
+            {
+                Items = items,
+                Total = total,
+                Page = page,
+                PageSize = pageSize
+            });
         }
 
         // GET: api/productos/5

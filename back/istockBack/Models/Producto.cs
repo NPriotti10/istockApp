@@ -22,8 +22,6 @@ public partial class Producto
     public int IdCategoria { get; set; }
     public virtual Categoria Categoria { get; set; } = null!;
 
-
-    public virtual ICollection<ItemCompra> ItemCompras { get; set; } = new List<ItemCompra>();
-
     public virtual ICollection<ItemVenta> ItemVenta { get; set; } = new List<ItemVenta>();
+    public virtual ICollection<ItemCompra> ItemCompra { get; set; } = new List<ItemCompra>();
 }

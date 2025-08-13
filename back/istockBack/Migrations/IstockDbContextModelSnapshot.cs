@@ -58,20 +58,38 @@ namespace istockBack.Migrations
                         .HasColumnName("fecha")
                         .HasDefaultValueSql("(getdate())");
 
-                    b.Property<int>("IdProveedor")
-                        .HasColumnType("int")
-                        .HasColumnName("idProveedor");
+                    b.Property<decimal>("PrecioTotal")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("PrecioCosto")
-                        .HasColumnType("decimal(10, 2)")
-                        .HasColumnName("precioCosto");
+                    b.Property<string>("Proveedor")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("proveedor");
 
                     b.HasKey("IdCompra")
-                        .HasName("PK__Compra__48B99DB7A18C3C77");
+                        .HasName("PK__Compra__077D56142EEBE7DC");
 
-                    b.HasIndex("IdProveedor");
+                    b.ToTable("Compra");
+                });
 
-                    b.ToTable("Compra", (string)null);
+            modelBuilder.Entity("istockBack.Models.GastoFijo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Monto")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GastoFijo");
                 });
 
             modelBuilder.Entity("istockBack.Models.ItemCompra", b =>
@@ -86,6 +104,9 @@ namespace istockBack.Migrations
                     b.Property<int>("Cantidad")
                         .HasColumnType("int")
                         .HasColumnName("cantidad");
+
+                    b.Property<int?>("CompraIdCompra")
+                        .HasColumnType("int");
 
                     b.Property<int>("IdCompra")
                         .HasColumnType("int")
@@ -104,6 +125,8 @@ namespace istockBack.Migrations
                         .HasColumnName("precioUnitario");
 
                     b.HasKey("IdItemCompra");
+
+                    b.HasIndex("CompraIdCompra");
 
                     b.HasIndex("IdCompra");
 
@@ -136,6 +159,9 @@ namespace istockBack.Migrations
                     b.Property<int>("IdVenta")
                         .HasColumnType("int")
                         .HasColumnName("idVenta");
+
+                    b.Property<string>("NumeroSerie")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("PrecioTotal")
                         .HasColumnType("decimal(10, 2)")
@@ -207,37 +233,6 @@ namespace istockBack.Migrations
                     b.ToTable("Producto", (string)null);
                 });
 
-            modelBuilder.Entity("istockBack.Models.Proveedor", b =>
-                {
-                    b.Property<int>("IdProveedor")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idProveedor");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdProveedor"));
-
-                    b.Property<string>("Contacto")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("contacto");
-
-                    b.Property<string>("Direccion")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("direccion");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("nombre");
-
-                    b.HasKey("IdProveedor")
-                        .HasName("PK__Proveedo__A3FA8E6B1CD56ADC");
-
-                    b.ToTable("Proveedor", (string)null);
-                });
-
             modelBuilder.Entity("istockBack.Models.Venta", b =>
                 {
                     b.Property<int>("IdVenta")
@@ -281,30 +276,23 @@ namespace istockBack.Migrations
                     b.ToTable("Venta");
                 });
 
-            modelBuilder.Entity("istockBack.Models.Compra", b =>
-                {
-                    b.HasOne("istockBack.Models.Proveedor", "IdProveedorNavigation")
-                        .WithMany("Compras")
-                        .HasForeignKey("IdProveedor")
-                        .IsRequired()
-                        .HasConstraintName("FK__Compra__idProvee__45F365D3");
-
-                    b.Navigation("IdProveedorNavigation");
-                });
-
             modelBuilder.Entity("istockBack.Models.ItemCompra", b =>
                 {
-                    b.HasOne("istockBack.Models.Compra", "IdCompraNavigation")
+                    b.HasOne("istockBack.Models.Compra", null)
+                        .WithMany("Items")
+                        .HasForeignKey("CompraIdCompra");
+
+                    b.HasOne("istockBack.Models.Compra", "Compra")
                         .WithMany("ItemCompra")
                         .HasForeignKey("IdCompra")
                         .IsRequired();
 
                     b.HasOne("istockBack.Models.Producto", "Producto")
-                        .WithMany("ItemCompras")
+                        .WithMany("ItemCompra")
                         .HasForeignKey("IdProducto")
                         .IsRequired();
 
-                    b.Navigation("IdCompraNavigation");
+                    b.Navigation("Compra");
 
                     b.Navigation("Producto");
                 });
@@ -349,18 +337,15 @@ namespace istockBack.Migrations
             modelBuilder.Entity("istockBack.Models.Compra", b =>
                 {
                     b.Navigation("ItemCompra");
+
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("istockBack.Models.Producto", b =>
                 {
-                    b.Navigation("ItemCompras");
+                    b.Navigation("ItemCompra");
 
                     b.Navigation("ItemVenta");
-                });
-
-            modelBuilder.Entity("istockBack.Models.Proveedor", b =>
-                {
-                    b.Navigation("Compras");
                 });
 
             modelBuilder.Entity("istockBack.Models.Venta", b =>

@@ -42,42 +42,51 @@ export default function EditSale() {
 
   if (!sale) return <p style={{ padding: 24 }}>Cargando venta...</p>;
 
-  // 🎨 Estilos inline para mantener consistencia visual
   const container = {
-    padding: 24,
-    maxWidth: 500,
-    margin: "0 auto",
-    background: "#f9f9f9",
-    borderRadius: 12,
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-  };
+  padding: "24px",
+  maxWidth: "600px",
+  margin: "0 auto",
+  background: "#ffffff",
+  borderRadius: "12px",
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+  display: "flex",
+  flexDirection: "column",
+  gap: "20px",
+};
 
-  const formGroup = {
-    marginBottom: 16,
-    display: "flex",
-    flexDirection: "column",
-  };
+const formGroup = {
+  display: "flex",
+  flexDirection: "column",
+};
 
-  const label = {
-    fontWeight: "bold",
-    marginBottom: 4,
-  };
+const label = {
+  fontWeight: "600",
+  marginBottom: "6px",
+  fontSize: "14px",
+  color: "#374151",
+};
 
-  const input = {
-    padding: 8,
-    border: "1px solid #ccc",
-    borderRadius: 6,
-  };
+const input = {
+  padding: "10px",
+  borderRadius: "8px",
+  border: "1px solid #d1d5db",
+  fontSize: "16px",
+  outline: "none",
+  transition: "border 0.2s",
+};
 
-  const button = {
-    padding: "10px 16px",
-    background: "#007bff",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer",
-    fontWeight: "bold",
-  };
+const button = {
+  padding: "12px",
+  background: "#2563eb",
+  color: "#ffffff",
+  border: "none",
+  borderRadius: "8px",
+  fontSize: "16px",
+  fontWeight: "600",
+  cursor: "pointer",
+  marginTop: "10px",
+};
+
 
   return (
     <div style={container}>

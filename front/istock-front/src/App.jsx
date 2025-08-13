@@ -10,6 +10,11 @@ import AddSale from "./pages/AddSale";
 import EditSale from "./pages/EditSale";
 import SaleDetail from "./pages/SaleDetail";
 import VentasPorPeriodo from "./pages/VentasPorPeriodo";
+import GastosFijos from "./pages/GastosFijos";
+import AddPurchase from "./pages/AddPurchase";
+import Purchase from "./pages/Purchase";
+import EditPurchase from "./pages/EditPurchase";
+import PurchaseDetail from "./pages/PurchaseDetail";
 
 export default function App() {
   return (
@@ -26,7 +31,12 @@ export default function App() {
           <Route path="/ventas/editar/:id" element={<EditSale/>} />
           <Route path="/ventas/detalle/:id" element={<SaleDetail/>} />
           <Route path="/ventas/:periodo" element={<VentasPorPeriodo />} />
-          
+          <Route path="/gastos" element={<GastosFijos />} />
+          <Route path="/compras" element={<Purchase />} />
+          <Route path="/compras/nueva" element={<AddPurchase />} />
+          <Route path="/compras/editar/:id" element={<EditPurchase />} />
+          <Route path="/compras/detalle/:id" element={<PurchaseDetail />} />
+        
         </Routes>
       </div>
     </BrowserRouter>

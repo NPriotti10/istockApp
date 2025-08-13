@@ -7,6 +7,12 @@ import AddSale from "../pages/AddSale";
 import EditSale from "../pages/EditSale";
 import SaleDetail from "../pages/SaleDetail";
 import VentasPorPeriodo from "../pages/VentasPorPeriodo";
+import GastosFijos from "../pages/GastosFijos";
+import AddPurchase from "../pages/AddPurchase";
+import Purchase from "../pages/Purchase";
+import EditPurchase from "../pages/EditPurchase";
+import PurchaseDetail from "../pages/PurchaseDetail";
+
 
 
 export default function AppRoutes() {
@@ -20,6 +26,11 @@ export default function AppRoutes() {
       <Route path="/ventas/editar/:id" element={<EditSale />} />
       <Route path="/ventas/detalle/:id" element={<SaleDetail />} />
       <Route path="/ventas/periodo/:periodo" element={<VentasPorPeriodo />} />
+      <Route path="/gastos" element={<GastosFijos />} />
+      <Route path="/compra" element={<Purchase />} />
+      <Route path="/compra/nueva" element={<AddPurchase />} />
+      <Route path="/compra/editar/:id" element={<EditPurchase />} />
+      <Route path="/compra/detalle/:id" element={<PurchaseDetail />} />
 
       {/* 
       <Route path="/productos/editar/:id" element={<EditProduct />} />

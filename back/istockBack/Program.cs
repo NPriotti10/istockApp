@@ -19,6 +19,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<VentaBackupService>();
+builder.Services.AddHostedService<VentaBackupMensualService>();
+
 
 builder.Services.AddDbContext<IstockDbContext>(options =>
 {

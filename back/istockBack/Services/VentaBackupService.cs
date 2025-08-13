@@ -9,7 +9,7 @@ namespace istockBack.Services
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<VentaBackupService> _logger;
-        private readonly string _backupPath = Path.Combine(Directory.GetCurrentDirectory(), "Backups");
+        private readonly string _backupPath = Path.Combine(Directory.GetCurrentDirectory(), "BackupSemanal");
 
         public VentaBackupService(IServiceScopeFactory scopeFactory, ILogger<VentaBackupService> logger)
         {
@@ -99,7 +99,7 @@ namespace istockBack.Services
                 }
             }
 
-            string fileName = $"backup_ventas_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            string fileName = $"backup_ventas_semanal_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
             workbook.SaveAs(Path.Combine(_backupPath, fileName));
         }
     }

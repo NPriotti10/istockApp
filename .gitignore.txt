@@ -1,0 +1,14 @@
+# Node.js (frontend)
+node_modules/
+build/
+.env
+
+# .NET (backend)
+bin/
+obj/
+.vscode/
+*.user
+*.suo
+
+# Excel Backups
+Backups/
