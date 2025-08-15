@@ -1,37 +1,46 @@
 // src/services/purchases.js
-import axios from "axios";
+import api from "./api"; // <-- usa el cliente con baseURL y token
 
-const API_URL = "http://localhost:7063/api/compra"; // Ajustalo si tu endpoint es distinto
+// Nota: Tu CompraController tiene [Route("api/[controller]")] y se llama "CompraController"
+// Eso expone /api/compra (singular). Por eso acá usamos "/compra".
+// Si lo cambias a plural en el back, reemplazá "/compra" por "/compras".
 
-export const getAllPurchases = async () => {
-  const res = await axios.get(API_URL);
-  return res.data;
-};
+/** GET: /api/compra (paginado + búsqueda por proveedor) */
 
-export const getPurchaseById = async (id) => {
-  const res = await axios.get(`${API_URL}/${id}`);
-  return res.data;
-};
 
-export const createPurchase = async (saleData) => {
-  const res = await axios.post(API_URL, saleData);
-  return res.data;
-};
+/** GET: /api/compra (todas) */
+export async function getAllPurchases() {
+  const { data } = await api.get("/compra");
+  return data;
+}
 
-export const updatePurchase = async (id, updatedData) => {
-  const res = await axios.put(`${API_URL}/${id}`, updatedData);
-  return res.data;
-};
+/** GET: /api/compra/{id} */
+export async function getPurchaseById(id) {
+  const { data } = await api.get(`/compra/${id}`);
+  return data;
+}
 
-export const deletePurchase = async (id) => {
-  const res = await axios.delete(`${API_URL}/${id}`);
-  return res.data;
-};
+/** POST: /api/compra */
+export async function createPurchase(purchaseData) {
+  const { data } = await api.post("/compra", purchaseData);
+  return data;
+}
 
-// services/purchase.js
+/** PUT: /api/compra/{id} */
+export async function updatePurchase(id, updatedData) {
+  const { data } = await api.put(`/compra/${id}`, updatedData);
+  return data;
+}
+
+/** DELETE: /api/compra/{id} */
+export async function deletePurchase(id) {
+  const { data } = await api.delete(`/compra/${id}`);
+  return data;
+}
+
 export async function getPurchasesPaged({ page = 1, pageSize = 10, search = "" } = {}) {
-  const params = new URLSearchParams({ page, pageSize, search });
-  const res = await fetch(`/api/compra/paged?${params.toString()}`);
-  if (!res.ok) throw new Error("Error al obtener compras paginadas");
-  return res.json();
+  const params = { page, pageSize };
+  if (search) params.search = search;
+  const { data } = await api.get("/compra/paged", { params });
+  return data;
 }

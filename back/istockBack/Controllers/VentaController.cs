@@ -1,5 +1,6 @@
 ﻿using istockBack.DTOs;
 using istockBack.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -28,7 +29,7 @@ public class VentaListaDto
     public string? EquipoPartePago { get; set; }
 }
 #endregion
-
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class VentasController : ControllerBase

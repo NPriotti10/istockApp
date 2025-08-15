@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 
 export default function Sidebar() {
   return (
-    <nav className="sidebar">
+    <nav className="sidebar" style={{ fontSize: 14 }}>
       <div className="sidebar-title">iStockApp</div>
       <NavLink to="/" end className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}>
         Home

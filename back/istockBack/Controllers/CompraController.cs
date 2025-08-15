@@ -1,5 +1,6 @@
 ﻿using istockBack.DTOs;
 using istockBack.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ public class CompraListaDto
 namespace istockBack.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class CompraController : ControllerBase
     {

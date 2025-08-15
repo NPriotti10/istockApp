@@ -1,37 +1,44 @@
 // src/services/sales.js
-import axios from "axios";
+import api from "./api";
 
-const API_URL = "http://localhost:7063/api/ventas"; // Ajustalo si tu endpoint es distinto
+// NOTA: tu baseURL en api.js ya termina en /api,
+// por eso acá las rutas van SIN /api delante (" /ventas ").
 
-export const getAllSales = async () => {
-  const res = await axios.get(API_URL);
-  return res.data;
-};
-
-export const getSaleById = async (id) => {
-  const res = await axios.get(`${API_URL}/${id}`);
-  return res.data;
-};
-
-export const createSale = async (saleData) => {
-  const res = await axios.post(API_URL, saleData);
-  return res.data;
-};
-
-export const updateSale = async (id, updatedData) => {
-  const res = await axios.put(`${API_URL}/${id}`, updatedData);
-  return res.data;
-};
-
-export const deleteSale = async (id) => {
-  const res = await axios.delete(`${API_URL}/${id}`);
-  return res.data;
-};
-
-// services/sales.js
+/** GET: /api/ventas (paginado + búsqueda opcional) */
 export async function getSalesPaged({ page = 1, pageSize = 10, search = "" } = {}) {
-  const params = new URLSearchParams({ page, pageSize, search });
-  const res = await fetch(`/api/ventas/paged?${params.toString()}`);
-  if (!res.ok) throw new Error("Error al obtener ventas paginadas");
-  return res.json();
+  const params = { page, pageSize };
+  if (search) params.search = search;
+  const { data } = await api.get("/ventas/paged", { params });
+  // Espera { items, total, page, pageSize } si tu back lo implementa
+  return data;
+}
+
+/** GET: /api/ventas (todas) */
+export async function getAllSales() {
+  const { data } = await api.get("/ventas");
+  return data;
+}
+
+/** GET: /api/ventas/{id} */
+export async function getSaleById(id) {
+  const { data } = await api.get(`/ventas/${id}`);
+  return data;
+}
+
+/** POST: /api/ventas */
+export async function createSale(saleData) {
+  const { data } = await api.post("/ventas", saleData);
+  return data;
+}
+
+/** PUT: /api/ventas/{id} */
+export async function updateSale(id, updatedData) {
+  const { data } = await api.put(`/ventas/${id}`, updatedData);
+  return data;
+}
+
+/** DELETE: /api/ventas/{id} */
+export async function deleteSale(id) {
+  const { data } = await api.delete(`/ventas/${id}`);
+  return data;
 }

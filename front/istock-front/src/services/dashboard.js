@@ -1,13 +1,14 @@
-const API_BASE = "http://localhost:7063/api/ventas";
+// src/services/dashboard.js
+import api from "./api";
 
+// GET: /api/ventas/estadisticas
 export async function getEstadisticas() {
-  const res = await fetch(`${API_BASE}/estadisticas`);
-  if (!res.ok) throw new Error("Error al obtener estadísticas");
-  return await res.json();
+  const { data } = await api.get("/ventas/estadisticas");
+  return data;
 }
 
+// GET: /api/ventas/bajostock
 export async function getProductosBajoStock() {
-  const res = await fetch(`${API_BASE}/bajostock`); // ✅ corregido
-  if (!res.ok) throw new Error("Error al obtener productos con stock bajo");
-  return await res.json();
+  const { data } = await api.get("/ventas/bajostock");
+  return data;
 }

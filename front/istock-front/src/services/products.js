@@ -1,34 +1,43 @@
 import api from "./api";
 
-export const getAllProducts = async () => {
-  const res = await api.get("/productos"); // <- esta ruta debe coincidir con el backend
-  return res.data;
-};
-
-export const nuevoProduct = async (nuevoProducto) => {
-  const res = await api.post("/productos", nuevoProducto);
-  return res.data;
-};
-
-export const deleteProduct = async (id) => {
-  return await api.delete(`/productos/${id}`);
-};
-
-export const getProductById = async (id) => {
-  const res = await api.get(`/productos/${id}`);
-  return res.data;
-};
-
-export const updateProduct = async (id, data) => {
-  return await api.put(`/productos/${id}`, data);
-};
-
+/** GET: /api/productos (paginado + filtros por querystring) */
 export async function getProductsPaged({ page = 1, pageSize = 10, search = "", categoriaId = null }) {
-  const params = new URLSearchParams({ page, pageSize });
-  if (search) params.append("search", search);
-  if (categoriaId) params.append("categoriaId", categoriaId);
+  const params = { page, pageSize };
+  if (search) params.search = search;
+  if (categoriaId !== null && categoriaId !== undefined && categoriaId !== "") {
+    params.categoriaId = Number(categoriaId);
+  }
+  const { data } = await api.get("/productos", { params });
+  // Espera { items, total, page, pageSize }
+  return data;
+}
 
-  const res = await fetch(`/api/productos?${params.toString()}`);
-  if (!res.ok) throw new Error("Error al cargar productos");
-  return res.json(); // { items, total, page, pageSize }
+/** GET: /api/productos (todos – evita usarlo si ya usás paginado) */
+export async function getAllProducts() {
+  const { data } = await api.get("/productos");
+  return data;
+}
+
+/** POST: /api/productos */
+export async function createProduct(nuevoProducto) {
+  const { data } = await api.post("/productos", nuevoProducto);
+  return data;
+}
+// alias si querés mantener el nombre anterior:
+export const nuevoProduct = createProduct;
+
+/** DELETE: /api/productos/{id} */
+export async function deleteProduct(id) {
+  return api.delete(`/productos/${id}`);
+}
+
+/** GET: /api/productos/{id} */
+export async function getProductById(id) {
+  const { data } = await api.get(`/productos/${id}`);
+  return data;
+}
+
+/** PUT: /api/productos/{id} */
+export async function updateProduct(id, prod) {
+  return api.put(`/productos/${id}`, prod);
 }

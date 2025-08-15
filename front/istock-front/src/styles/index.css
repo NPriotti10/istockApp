@@ -290,30 +290,7 @@
   min-height: 100vh;
   background: #f8fafc;
 }
-@media (max-width: 700px) {
-  .sidebar {
-    position: relative;
-    width: 100%;
-    min-width: unset;
-    flex-direction: row;
-    padding: 8px 0 0 0;
-    height: auto;
-    min-height: unset;
-    box-shadow: none;
-  }
-  .sidebar-title, .sidebar-footer {
-    display: none;
-  }
-  .sidebar-link {
-    padding: 10px 16px;
-    font-size: 0.97rem;
-  }
-  .app-content {
-    margin-left: 0;
-    margin-top: 48px;
-    padding-top: 18px;
-  }
-}
+
 
 
 .form-container {

@@ -37,7 +37,7 @@ export default function Home() {
 
     getGastosFijos()
       .then((total) => {
-        const totalGastos = total.reduce((acc, item) => acc + item.monto, 0);
+        const totalGastos = total.reduce((acc, item) => acc + Number(item.monto ?? 0), 0);
         setGastosFijos(totalGastos);
       })
       .catch((err) => console.error("❌ Error gastos fijos:", err.message));
@@ -46,7 +46,9 @@ export default function Home() {
   return (
     <div className="home">
       <style>{`
-        :root{
+        /* ====== SCOPE SOLO EN HOME ====== */
+        .home{
+          /* variables y base SOLO aquí */
           --bg:#f6f8fb;
           --card:#ffffff;
           --text:#0f172a;
@@ -59,107 +61,108 @@ export default function Home() {
           --radius:16px;
           --shadow:0 2px 10px rgba(16,24,40,.06);
           --shadow-strong:0 8px 24px rgba(16,24,40,.08);
+
+          max-width:1100px; margin:0 auto; padding:28px 20px 48px;
+          background:var(--bg); color:var(--text);
+          font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
         }
 
-        *{box-sizing:border-box}
-        html,body,#root{height:100%}
-        body{background:var(--bg); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;}
-
-        .home{max-width:1100px; margin:0 auto; padding:28px 20px 48px}
+        /* NO reglas globales como body, a, table sin scope */
+        .home *{ box-sizing:border-box; }
 
         /* Header */
-        .header{
+        .home .header{
           display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px;
         }
-        .title{font-size:28px; font-weight:800; margin:0}
-        .subtitle{margin:6px 0 0; color:var(--muted); font-size:14px}
-        .divider{height:1px; background:var(--border); margin:14px 0 8px}
+        .home .title{font-size:28px; font-weight:800; margin:0}
+        .home .subtitle{margin:6px 0 0; color:var(--muted); font-size:14px}
+        .home .divider{height:1px; background:var(--border); margin:14px 0 8px}
 
         /* KPI grid superior */
-        .kpi-grid{
+        .home .kpi-grid{
           display:grid; gap:14px;
           grid-template-columns: repeat(4, minmax(0,1fr));
         }
         @media (max-width: 1000px){
-          .kpi-grid{grid-template-columns: repeat(2, minmax(0,1fr));}
+          .home .kpi-grid{grid-template-columns: repeat(2, minmax(0,1fr));}
         }
         @media (max-width: 560px){
-          .kpi-grid{grid-template-columns: 1fr;}
+          .home .kpi-grid{grid-template-columns: 1fr;}
         }
 
-        .kpi {
+        .home .kpi {
           background: var(--card);
-          border: 1px solid #c7d2e5; /* borde más visible en KPIs */
+          border: 1px solid #c7d2e5;
           border-radius: var(--radius);
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
           padding: 14px 16px;
           transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
         }
-        .kpi__top{
+        .home .kpi__top{
           display:flex; align-items:center; justify-content:space-between; gap:8px;
         }
-        .kpi__label{font-size:13px; color:var(--muted)}
-        .kpi__badge{
+        .home .kpi__label{font-size:13px; color:var(--muted)}
+        .home .kpi__badge{
           font-size:11px; color:#334155; background:var(--brand-weak);
           padding:4px 8px; border-radius:999px; border:1px solid #dbe4ff;
         }
-        .kpi__value{
+        .home .kpi__value{
           font-size:26px; font-weight:800; letter-spacing:.2px; color:var(--brand); line-height:1.1;
         }
-        .kpi--click{cursor:pointer; transition:transform .15s ease, box-shadow .15s ease}
-        .kpi--click:hover{transform:translateY(-2px); box-shadow:var(--shadow-strong)}
+        .home .kpi--click{cursor:pointer;}
+        .home .kpi--click:hover{transform:translateY(-2px); box-shadow:var(--shadow-strong)}
 
         /* Secciones */
-        .section{margin-top:24px}
-        .section__title{
+        .home .section{margin-top:24px}
+        .home .section__title{
           font-size:16px; font-weight:800; margin:0 0 12px; display:flex; align-items:center; gap:8px;
         }
-        .pill{
+        .home .pill{
           width:8px; height:8px; border-radius:999px; background:var(--brand);
           box-shadow:0 0 0 3px var(--brand-weak);
         }
 
-        /* Grids de contenido */
-        .grid-2{
+        /* Grids */
+        .home .grid-2{
           display:grid; gap:14px;
           grid-template-columns: repeat(2, minmax(0,1fr));
         }
         @media (max-width: 820px){
-          .grid-2{grid-template-columns: 1fr;}
+          .home .grid-2{grid-template-columns: 1fr;}
         }
 
-        .card {
+        .home .card {
           background: var(--card);
-          border: 1px solid #d0d7e3; /* borde más visible */
+          border: 1px solid #d0d7e3;
           border-radius: var(--radius);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* sombra más fuerte */
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
           padding: 16px;
-}
-        .metric{
+        }
+        .home .metric{
           display:flex; align-items:center; justify-content:space-between; gap:12px;
         }
-        .metric__label{font-size:13px; color:var(--muted)}
-        .metric__value{font-size:24px; font-weight:800; color:var(--brand)}
-        .metric--success .metric__value{color:var(--success)}
-        .metric--danger .metric__value{color:var(--danger)}
+        .home .metric__label{font-size:13px; color:var(--muted)}
+        .home .metric__value{font-size:24px; font-weight:800; color:var(--brand)}
+        .home .metric--success .metric__value{color:var(--success)}
+        .home .metric--danger .metric__value{color:var(--danger)}
 
-        /* Tabla */
-        .table-card {
-          border: 1px solid #d0d7e3; /* resalta la tabla */
+        /* Tabla (scoped) */
+        .home .table-card {
+          border: 1px solid #d0d7e3;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
-        .table-wrap{max-height:380px; overflow:auto}
-        table{width:100%; border-collapse:separate; border-spacing:0}
-        thead th{
+        .home .table-wrap{max-height:380px; overflow:auto}
+        .home table{width:100%; border-collapse:separate; border-spacing:0}
+        .home thead th{
           position:sticky; top:0; background:#f3f6fb; z-index:1;
           font-size:13px; color:#334155; text-align:left; padding:12px 14px; border-bottom:1px solid var(--border);
         }
-        tbody td{padding:12px 14px; border-bottom:1px solid var(--border); font-size:14px; color:#475569}
-        tbody tr:nth-child(even){background:#fafcff}
-        tbody tr:hover{background:#f5f8ff}
+        .home tbody td{padding:12px 14px; border-bottom:1px solid var(--border); font-size:14px; color:#475569}
+        .home tbody tr:nth-child(even){background:#fafcff}
+        .home tbody tr:hover{background:#f5f8ff}
 
         /* Helpers */
-        .muted{color:var(--muted)}
+        .home .muted{color:var(--muted)}
       `}</style>
 
       {/* Header */}
@@ -173,15 +176,14 @@ export default function Home() {
 
       {/* KPIs principales */}
       <div className="kpi-grid">
-        <div className="kpi kpi--click" onClick={() => navigate("/ventas/semanal")}>
+        <div className="kpi kpi--click" onClick={() => navigate("/ventas/periodo/semanal")}>
           <div className="kpi__top">
             <span className="kpi__label">Ventas semanales</span>
-            
           </div>
           <div className="kpi__value">{ventasSemanales.length}</div>
         </div>
 
-        <div className="kpi kpi--click" onClick={() => navigate("/ventas/mensual")}>
+        <div className="kpi kpi--click" onClick={() => navigate("/ventas/periodo/mensual")}>
           <div className="kpi__top">
             <span className="kpi__label">Ventas mensuales</span>
             <span className="kpi__badge">Mes actual</span>
@@ -208,7 +210,7 @@ export default function Home() {
 
       {/* Ganancias en ARS */}
       <section className="section">
-        <h3 className="section__title"><span className="pill" /> GANANCIAS (ARS)</h3>
+        <h3 className="section__title"> GANANCIAS (ARS)</h3>
         <div className="grid-2">
           <div className="card metric">
             <span className="metric__label">SEMANAL</span>
@@ -223,7 +225,7 @@ export default function Home() {
 
       {/* Neta vs Gastos */}
       <section className="section">
-        <h3 className="section__title"><span className="pill" /> GANANACIA NETA VS GASTOS</h3>
+        <h3 className="section__title">  GANANCIA NETA VS GASTOS</h3>
         <div className="grid-2">
           <div className="card metric metric--success">
             <span className="metric__label">Ganancia mensual neta (USD)</span>
@@ -238,7 +240,7 @@ export default function Home() {
 
       {/* Stock bajo */}
       <section className="section">
-        <h3 className="section__title"><span className="pill" /> PRODUCTOS CON BAJO STOCK</h3>
+        <h3 className="section__title"> PRODUCTOS CON BAJO STOCK</h3>
         {productosBajoStock.length === 0 ? (
           <div className="card"><span className="muted">No hay productos con stock bajo.</span></div>
         ) : (

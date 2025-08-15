@@ -1,10 +1,12 @@
 using istockBack.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace istockBack.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class GastosFijosController : ControllerBase
     {

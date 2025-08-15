@@ -23,10 +23,10 @@ public partial class IstockDbContext : DbContext
     public virtual DbSet<ItemVenta> ItemVenta { get; set; }
 
     public virtual DbSet<Producto> Productos { get; set; }
-
+    public virtual DbSet<Usuario> Usuarios { get; set; }
 
     public virtual DbSet<Venta> Venta { get; set; }
-    public DbSet<GastoFijo> GastoFijo { get; set; }
+    public virtual DbSet<GastoFijo> GastoFijo { get; set; }
 
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -44,6 +44,14 @@ public partial class IstockDbContext : DbContext
             entity.Property(e => e.Nombre)
                 .HasMaxLength(50)
                 .HasColumnName("nombre");
+        });
+
+        modelBuilder.Entity<Usuario>(e =>
+        {
+            e.HasKey(u => u.Id);
+            e.Property(u => u.Username).IsRequired().HasMaxLength(100);
+            e.HasIndex(u => u.Username).IsUnique();
+            e.Property(u => u.PasswordHash).IsRequired().HasMaxLength(200);
         });
 
         modelBuilder.Entity<ItemCompra>(entity =>

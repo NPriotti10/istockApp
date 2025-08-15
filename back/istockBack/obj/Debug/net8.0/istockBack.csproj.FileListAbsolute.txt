@@ -187,12 +187,14 @@ C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\istockBack.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\istockBack.pdb
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\Azure.Core.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\Azure.Identity.dll
+C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\BCrypt.Net-Next.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\ClosedXML.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\ClosedXML.Parser.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\DocumentFormat.OpenXml.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\DocumentFormat.OpenXml.Framework.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\ExcelNumberFormat.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\Humanizer.dll
+C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\Microsoft.Bcl.AsyncInterfaces.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\Microsoft.Build.Locator.dll
 C:\Proyects\istockApp\back\istockBack\bin\Debug\net8.0\Microsoft.CodeAnalysis.dll
@@ -350,10 +352,10 @@ C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\staticwebassets.build.jso
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\staticwebassets.build.json.cache
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\staticwebassets.development.json
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\staticwebassets.build.endpoints.json
-C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\istockBack.csproj.Up2Date
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\istockBack.dll
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\refint\istockBack.dll
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\istockBack.pdb
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\istockBack.genruntimeconfig.cache
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\ref\istockBack.dll
+C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

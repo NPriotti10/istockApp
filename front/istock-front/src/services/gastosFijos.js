@@ -1,31 +1,26 @@
-const BASE_URL = "http://localhost:7063/api/GastosFijos";
+// src/services/gastosFijos.js
+import api from "./api"; // usa el cliente con baseURL y JWT
 
-export const getGastosFijos = async () => {
-  const res = await fetch(BASE_URL);
-  if (!res.ok) throw new Error("Error al obtener gastos fijos");
-  return await res.json();
-};
+// GET: /api/GastosFijos
+export async function getGastosFijos() {
+  const { data } = await api.get("/GastosFijos");
+  return data;
+}
 
-export const addGastoFijo = async (nuevoGasto) => {
-  const res = await fetch(BASE_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(nuevoGasto),
-  });
-  if (!res.ok) throw new Error("Error al agregar gasto fijo");
-  return await res.json();
-};
+// POST: /api/GastosFijos
+export async function addGastoFijo(nuevoGasto) {
+  const { data } = await api.post("/GastosFijos", nuevoGasto);
+  return data;
+}
 
-export const deleteGastoFijo = async (id) => {
-  const res = await fetch(`${BASE_URL}/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Error al eliminar gasto fijo");
-};
+// DELETE: /api/GastosFijos/{id}
+export async function deleteGastoFijo(id) {
+  const { data } = await api.delete(`/GastosFijos/${id}`);
+  return data;
+}
 
-export const updateGastoFijo = async (id, gastoActualizado) => {
-  const res = await fetch(`${BASE_URL}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(gastoActualizado),
-  });
-  if (!res.ok) throw new Error("Error al actualizar gasto fijo");
-};
+// PUT: /api/GastosFijos/{id}
+export async function updateGastoFijo(id, gastoActualizado) {
+  const { data } = await api.put(`/GastosFijos/${id}`, gastoActualizado);
+  return data;
+}

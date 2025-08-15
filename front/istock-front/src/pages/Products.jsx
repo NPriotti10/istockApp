@@ -182,7 +182,7 @@ export default function Products() {
 
       {/* Info + Paginación (igual a Compras) */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 14, color: "#555" }}>{pagInfo}</span>
+        
         <Pagination
           page={data.page}
           pageSize={data.pageSize}
