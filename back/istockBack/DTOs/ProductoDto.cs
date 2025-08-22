@@ -11,5 +11,7 @@
         public int StockMinimo { get; set; }
         public int IdCategoria { get; set; }
         public CategoriaDto? Categoria { get; set; } = null!;
+
+        public string? CodigoBarra { get; set; }
     }
 }

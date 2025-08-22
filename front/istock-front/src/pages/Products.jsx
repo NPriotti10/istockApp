@@ -5,19 +5,25 @@ import { getAllCategorias } from "../services/categorias";
 import { getProductsPaged, deleteProduct } from "../services/products";
 import Pagination from "../components/Pagination";
 
+const USD_OVERRIDE_KEY = "usd_override_v1";
+
 export default function Products() {
   // Datos paginados
   const [data, setData] = useState({ items: [], total: 0, page: 1, pageSize: 10 });
   const [loading, setLoading] = useState(false);
 
   // Filtros
-  const [typed, setTyped] = useState("");          // input del buscador (con debounce)
+  const [typed, setTyped] = useState("");           // input del buscador (con debounce)
   const [searchTerm, setSearchTerm] = useState(""); // lo que viaja a la API
   const [selectedCategory, setSelectedCategory] = useState("");
   const [categorias, setCategorias] = useState([]);
 
-  // Dólar
-  const [dolar, setDolar] = useState(1);
+  // Dólar (mercado/override)
+  const [dolar, setDolar] = useState(1);         // valor efectivo que usa la tabla
+  const [nuevoDolar, setNuevoDolar] = useState(1); // input para actualizar
+  const [isOverridden, setIsOverridden] = useState(false);
+  const [updatingDolar, setUpdatingDolar] = useState(false);
+  const [dolarError, setDolarError] = useState("");
 
   // Utilidad moneda
   const currency = (n) =>
@@ -25,7 +31,33 @@ export default function Products() {
 
   // Cargar dólar y categorías una vez
   useEffect(() => {
-    getDolarValue().then(setDolar).catch(() => {});
+    // 1) Intentar leer override local
+    const raw = localStorage.getItem(USD_OVERRIDE_KEY);
+    if (raw) {
+      try {
+        const { value } = JSON.parse(raw);
+        const v = Number(value);
+        if (v > 0) {
+          setDolar(v);
+          setNuevoDolar(v);
+          setIsOverridden(true);
+        }
+      } catch { /* ignore */ }
+    }
+
+    // 2) Traer valor de mercado (si no hay override, o para mostrar en reset)
+    getDolarValue()
+      .then((val) => {
+        const v = Number(val) || 1;
+        // si NO hay override, usamos el de mercado
+        if (!raw) {
+          setDolar(v);
+          setNuevoDolar(v);
+        }
+        // si hay override, igual actualizamos el input de referencia de mercado aparte
+      })
+      .catch(() => { /* podés mostrar un toast si querés */ });
+
     getAllCategorias().then(setCategorias).catch(() => alert("Error al obtener categorías"));
   }, []);
 
@@ -75,6 +107,44 @@ export default function Products() {
     }
   }
 
+  // Actualizar valor del dólar (override local)
+  async function handleActualizarDolar(e) {
+    e.preventDefault();
+    setDolarError("");
+    const val = Number(nuevoDolar);
+    if (Number.isNaN(val) || val <= 0) {
+      setDolarError("Ingresá un valor numérico mayor a 0.");
+      return;
+    }
+    setUpdatingDolar(true);
+    try {
+      // Persistimos localmente
+      localStorage.setItem(USD_OVERRIDE_KEY, JSON.stringify({ value: val, updatedAt: new Date().toISOString() }));
+      setDolar(val);
+      setIsOverridden(true);
+    } catch (err) {
+      console.error("Error guardando override USD:", err);
+      setDolarError("No se pudo guardar el valor local.");
+    } finally {
+      setUpdatingDolar(false);
+    }
+  }
+
+  // Volver al valor de mercado
+  async function handleResetDolar() {
+    setDolarError("");
+    try {
+      const mercado = await getDolarValue();
+      const v = Number(mercado) || 1;
+      localStorage.removeItem(USD_OVERRIDE_KEY);
+      setDolar(v);
+      setNuevoDolar(v);
+      setIsOverridden(false);
+    } catch {
+      setDolarError("No se pudo obtener el valor de mercado.");
+    }
+  }
+
   // Info de paginación estilo compras: "x-y de total"
   const pagInfo = useMemo(() => {
     const total = Number(data.total ?? 0);
@@ -86,6 +156,60 @@ export default function Products() {
 
   return (
     <div className="body-bg" style={{ padding: 24 }}>
+      {/* Dólar actual + actualizar (override local) */}
+        <form onSubmit={handleActualizarDolar} style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 14, color: "#555" }}>
+            USD {isOverridden ? "(manual)" : "(mercado)"}:
+          </span>
+          <strong style={{ fontSize: 15 }}>${Number(dolar || 0).toFixed(2)}</strong>
+
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            value={nuevoDolar}
+            onChange={(e) => setNuevoDolar(e.target.value)}
+            style={{ padding: "8px", borderRadius: 6, border: "1px solid #ccc", width: 120 }}
+            aria-label="Nuevo valor del dólar"
+          />
+          <button
+            type="submit"
+            disabled={updatingDolar}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 6,
+              border: "none",
+              background: updatingDolar ? "#9CA3AF" : "#2563EB",
+              color: "#fff",
+              fontWeight: 600,
+              cursor: updatingDolar ? "not-allowed" : "pointer"
+            }}
+            title="Actualizar valor del dólar"
+          >
+            {updatingDolar ? "Guardando..." : "Actualizar"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleResetDolar}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 6,
+              border: "1px solid #ccc",
+              background: "#fff",
+              fontWeight: 600,
+              cursor: "pointer"
+            }}
+            title="Volver al valor de mercado"
+          >
+            Usar mercado
+          </button>
+
+          {dolarError ? <span style={{ color: "#B91C1C", fontSize: 12 }}>{dolarError}</span> : null}
+        </form>
+
+
+
       {/* Encabezado */}
       <div
         className="products-header"
@@ -95,7 +219,7 @@ export default function Products() {
         <Link to="/productos/nuevo" className="add-product-btn">+ Nuevo Producto</Link>
       </div>
 
-      {/* 🔍 Barra superior con mismo estilo que Compras */}
+      {/* 🔍 Barra superior + Dólar */}
       <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
         {/* Buscador por nombre */}
         <input
@@ -120,8 +244,9 @@ export default function Products() {
           ))}
         </select>
 
-        {/* Selector de filas por página alineado a la derecha (igual a Compras) */}
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+        
+        {/* Selector de filas por página */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <span style={{ fontSize: 14, color: "#555" }}>Filas por página</span>
           <select
             value={data.pageSize}
@@ -168,7 +293,7 @@ export default function Products() {
                   <td>{prod.stockActual}</td>
                   <td>{currency(Number(prod.precioCosto ?? 0))}</td>
                   <td>{currency(Number(prod.precioVenta ?? 0))}</td>
-                  <td>{currency(Math.round(Number(prod.precioVenta ?? 0) * Number(dolar ?? 1)))}</td>
+                  <td>{currency(Number(prod.precioVenta ?? 0) * Number(dolar ?? 1))}</td>
                   <td>
                     <Link to={`/productos/editar/${prod.idProducto}`} className="action-btn edit">Editar</Link>
                     <button className="action-btn delete" onClick={() => handleDelete(prod.idProducto)}>Eliminar</button>
@@ -180,7 +305,7 @@ export default function Products() {
         </table>
       </div>
 
-      {/* Info + Paginación (igual a Compras) */}
+      {/* Info + Paginación */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
         
         <Pagination

@@ -163,72 +163,100 @@ public class VentasController : ControllerBase
         return Ok(resultado);
     }
 
+    // POST: api/ventas
     [HttpPost]
     public async Task<IActionResult> RegistrarVenta([FromBody] VentaDto ventaDto)
     {
         if (ventaDto == null || ventaDto.Items == null || !ventaDto.Items.Any())
             return BadRequest("Datos de venta inválidos.");
 
-        decimal total = 0;
-        decimal ganancia = 0;
+        using var tx = await _context.Database.BeginTransactionAsync();
+
+        var valorDolar = ventaDto.ValorDolar > 0 ? ventaDto.ValorDolar : 1m;
+
+        // Batch fetch de productos
+        var ids = ventaDto.Items.Select(i => i.IdProducto).ToList();
+        var productos = await _context.Productos
+            .AsTracking()
+            .Include(p => p.Categoria)
+            .Where(p => ids.Contains(p.IdProducto))
+            .ToDictionaryAsync(p => p.IdProducto);
+
+        decimal total = 0m;
+        decimal ganancia = 0m;
 
         var nuevaVenta = new Venta
         {
             Cliente = ventaDto.Cliente,
             FormaPago = ventaDto.FormaPago,
             Fecha = ventaDto.Fecha ?? DateTime.Now,
-            ValorDolar = ventaDto.ValorDolar,
+            ValorDolar = valorDolar,
             EquipoPartePago = ventaDto.EquipoPartePago ?? "",
             ItemVenta = new List<ItemVenta>()
         };
 
         foreach (var item in ventaDto.Items)
         {
-            var producto = await _context.Productos.FindAsync(item.IdProducto);
-            if (producto == null)
+            if (!productos.TryGetValue(item.IdProducto, out var producto))
                 return NotFound($"Producto con ID {item.IdProducto} no encontrado.");
 
-            // Validación: stock suficiente
-            if (producto.StockActual < item.Cantidad)
-                return BadRequest($"Stock insuficiente para el producto '{producto.Nombre}'. Stock disponible: {producto.StockActual}, requerido: {item.Cantidad}");
+            var cantidad = item.Cantidad > 0 ? item.Cantidad : 1;
 
-            // Cálculos
-            decimal precioUnitario = producto.PrecioVenta;
-            decimal precioCosto = producto.PrecioCosto;
-            decimal subtotal = precioUnitario * item.Cantidad;
-            decimal utilidad = (precioUnitario - precioCosto) * item.Cantidad;
+            if (producto.StockActual < cantidad)
+                return BadRequest(
+                    $"Stock insuficiente para '{producto.Nombre}'. Disponible: {producto.StockActual}, requerido: {cantidad}");
+
+            var nombreCat = (producto.Categoria?.Nombre ?? "").Trim().ToLowerInvariant();
+            var esAccesorio = nombreCat == "accesorios" || nombreCat == "accesorio";
+
+            // Si es Accesorio, los precios vienen en ARS → pasar a USD
+            var precioVenta = producto.PrecioVenta; // asumo no nulos; si pueden ser nulos: ?? 0m
+            var precioCosto = producto.PrecioCosto;
+
+            var precioUnitarioUSD = esAccesorio
+                ? decimal.Round(precioVenta / valorDolar, 2)
+                : decimal.Round(precioVenta, 2);
+
+            var costoUSD = esAccesorio
+                ? decimal.Round(precioCosto / valorDolar, 2)
+                : decimal.Round(precioCosto, 2);
+
+            var subtotalUSD = decimal.Round(precioUnitarioUSD * cantidad, 2);
+            var gananciaItemUSD = decimal.Round((precioUnitarioUSD - costoUSD) * cantidad, 2);
 
             nuevaVenta.ItemVenta.Add(new ItemVenta
             {
-                IdProducto = item.IdProducto,
-                Cantidad = item.Cantidad,
-                NumeroSerie = item.NumeroSerie, // 👈 queda guardado por ítem
-                PrecioUnitario = precioUnitario,
-                PrecioTotal = subtotal,
-                Ganancia = utilidad
+                IdProducto = producto.IdProducto,
+                Cantidad = cantidad,
+                NumeroSerie = item.NumeroSerie,
+                PrecioUnitario = precioUnitarioUSD,
+                PrecioTotal = subtotalUSD,
+                Ganancia = gananciaItemUSD
             });
 
-            total += subtotal;
-            ganancia += utilidad;
+            total += subtotalUSD;
+            ganancia += gananciaItemUSD;
 
-            // Actualiza stock
-            producto.StockActual -= item.Cantidad;
+            // Descontar stock
+            producto.StockActual -= cantidad;
         }
 
-        nuevaVenta.PrecioTotal = total;
-        nuevaVenta.GananciaTotal = ganancia;
+        nuevaVenta.PrecioTotal = decimal.Round(total, 2);
+        nuevaVenta.GananciaTotal = decimal.Round(ganancia, 2);
 
         _context.Venta.Add(nuevaVenta);
         await _context.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return Ok(new
         {
             Mensaje = "Venta registrada con éxito.",
-            Total = total,
-            Ganancia = ganancia,
+            Total = nuevaVenta.PrecioTotal,
+            Ganancia = nuevaVenta.GananciaTotal,
             VentaId = nuevaVenta.IdVenta
         });
     }
+
 
     // PUT: api/ventas/{id}
     [HttpPut("{id}")]

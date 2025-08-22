@@ -1,30 +1,76 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
+// ✅ Importá tu logo así para que Vite lo sirva correctamente
+import logo from "../img/logo.jpg.jpeg";
+import { useLocation } from "react-router-dom";
+
+
+
+
 
 export default function Sidebar() {
+
+  const { pathname } = useLocation();
+
+  // rutas donde NO debe mostrarse el sidebar
+  const HIDE_ON = ["/login"]; // agregá más si querés: "/register", "/recuperar", etc.
+  const mustHide = HIDE_ON.some((p) => pathname.startsWith(p));
+  if (mustHide) return null;
+
   return (
-    <nav className="sidebar" style={{ fontSize: 14 }}>
-      <div className="sidebar-title">iStockApp</div>
-      <NavLink to="/" end className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}>
-        Home
-      </NavLink>
-      <NavLink to="/productos" className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}>
-        Productos
-      </NavLink>
-      <NavLink to="/ventas" className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}>
-        Ventas
-      </NavLink>
-      <NavLink to="/compras" className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}>
-        Compras
-      </NavLink>
-      <NavLink to="/gastos" className={({ isActive }) => isActive ? "sidebar-link active" : "sidebar-link"}>
-        Gastos Mensuales
-      </NavLink>
-      
-      {/* Agregá más links según tus páginas */}
-      <div className="sidebar-footer">
-        <span>Prio - 2025</span>
+    <nav className="sidebar">
+      {/* Brand */}
+      <Link to="/" className="sidebar__brand" aria-label="Ir a Home">
+        <div className="sidebar__logoWrap">
+          <img src={logo} alt="iStockApp" className="sidebar__logo" />
+        </div>
+        <div className="sidebar__brandMeta">
+          <span className="sidebar__title">iStockApp</span>
+        </div>
+      </Link>
+
+      <div className="sidebar__divider" />
+
+      {/* Nav */}
+      <div className="sidebar__nav">
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")}
+        >
+          Home
+        </NavLink>
+
+        <NavLink
+          to="/productos"
+          className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")}
+        >
+          Productos
+        </NavLink>
+
+        <NavLink
+          to="/ventas"
+          className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")}
+        >
+          Ventas
+        </NavLink>
+
+        <NavLink
+          to="/compras"
+          className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")}
+        >
+          Compras
+        </NavLink>
+
+        <NavLink
+          to="/gastos"
+          className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")}
+        >
+          Gastos Mensuales
+        </NavLink>
       </div>
+
+      
     </nav>
   );
 }

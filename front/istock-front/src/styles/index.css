@@ -20,21 +20,30 @@
   color: #22223b;
 }
 
+/* Botón “Nuevo Producto” */
 .add-product-btn {
-  background-color: #2563eb; /* azul */
-  color: white;
-  padding: 10px 24px;
-  border: none;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: 10px 14px;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 600;
+  border: 1px solid #1e40af;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  text-decoration: none;        /* ← quita el subrayado */
 }
-.add-product-btn:hover {
-  background-color: #1d4ed8;
+
+.add-product-btn:hover,
+.add-product-btn:focus,
+.add-product-btn:visited {
+  text-decoration: none;        /* ← evita que vuelva en hover/visited */
+  color: #fff;
 }
+
+.add-product-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+
 
 /* Tabla de productos */
 .products-table-container {
@@ -77,31 +86,73 @@
   background: #f1f5f9;
 }
 
-/* Acciones */
-.action-btn {
-  background: none;
-  border: none;
-  font-size: 1rem;
+/* Base para ambos (Link o button) */
+.action-btn,
+.action-btn:visited {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1;
   cursor: pointer;
-  margin-right: 8px;
-  padding: 0 4px;
+  color: #334155;             /* color neutro por defecto */
+  text-decoration: none;      /* ← sin subrayado */
+  transition: background .15s ease, border-color .15s ease, transform .06s ease, box-shadow .15s ease;
 }
 
-.action-btn.edit {
+.action-btn:hover { background: #f8fafc; }
+.action-btn:active { transform: translateY(1px); }
+.action-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .25); /* anillo de enfoque accesible */
+}
+
+/* Variante Editar */
+.action-btn.edit,
+.action-btn.edit:visited {
   color: #2563eb;
-  font-weight: 600;
-}
-.action-btn.edit:hover {
-  text-decoration: underline;
+  border-color: #bfdbfe;
 }
 
-.action-btn.delete {
+.action-btn.edit:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  text-decoration: none;      /* evita subrayado en hover */
+}
+
+/* Variante Eliminar */
+.action-btn.delete,
+.action-btn.delete:visited {
   color: #dc2626;
-  font-weight: 600;
+  border-color: #fecaca;
 }
+
 .action-btn.delete:hover {
-  text-decoration: underline;
+  background: #fef2f2;
+  border-color: #fca5a5;
+  text-decoration: none;      /* evita subrayado en hover */
 }
+
+/* Deshabilitado (opcional) */
+.action-btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Si usás íconos SVG dentro */
+.action-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
 
 /* Responsive (para móviles) */
 @media (max-width: 600px) {
@@ -235,54 +286,7 @@
     gap: 16px;
   }
 }
-.sidebar {
-  width: 210px;
-  min-width: 170px;
-  background: #1e293b;
-  color: #f1f5f9;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding-top: 34px;
-  position: fixed;
-  left: 0;
-  top: 0;
-  box-shadow: 2px 0 14px rgba(30,41,59,0.10);
-}
 
-.sidebar-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #60a5fa;
-  margin-bottom: 28px;
-  text-align: center;
-  letter-spacing: 1px;
-}
-
-.sidebar-link {
-  display: block;
-  padding: 12px 32px;
-  color: #f1f5f9;
-  font-size: 1rem;
-  text-decoration: none;
-  transition: background .16s, color .13s;
-  border-left: 3px solid transparent;
-}
-
-.sidebar-link.active,
-.sidebar-link:hover {
-  background: #2563eb;
-  color: #fff;
-  border-left: 3px solid #60a5fa;
-}
-
-.sidebar-footer {
-  margin-top: auto;
-  padding: 18px 16px 12px 32px;
-  font-size: 0.95rem;
-  color: #cbd5e1;
-  opacity: 0.75;
-}
 
 .app-content {
   margin-left: 210px;
@@ -498,4 +502,163 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
+}
+
+
+/* ===== Sidebar (solo estilos del componente) ===== */
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 240px;
+  padding: 16px 14px;
+  background: #0b1220; /* azul muy oscuro */
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  padding: 8px;
+  border-radius: 12px;
+  transition: background .15s ease, transform .15s ease;
+  color: inherit;
+}
+
+.sidebar__brand:hover {
+  background: rgba(148, 163, 184, 0.08);
+  transform: translateY(-1px);
+}
+
+.sidebar__logoWrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 6px 14px rgba(0,0,0,.25);
+  background: #0f172a;
+  display: grid;
+  place-items: center;
+}
+
+.sidebar__logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* recorta suavemente si el logo no es cuadrado */
+  display: block;
+}
+
+.sidebar__brandMeta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.sidebar__title {
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: .2px;
+  font-size: 16px;
+}
+
+.sidebar__subtitle {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.sidebar__divider {
+  height: 1px;
+  background: linear-gradient(to right, rgba(148,163,184,.16), rgba(148,163,184,.06));
+  margin: 6px 4px 10px;
+  border-radius: 999px;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Links */
+.sidebar-link {
+  position: relative;
+  display: block;
+  padding: 10px 12px 10px 16px;
+  border-radius: 10px;
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+
+.sidebar-link:hover {
+  background: rgba(148, 163, 184, 0.08);
+  color: #e2e8f0;
+}
+
+.sidebar-link.active {
+  background: rgba(79, 70, 229, 0.14); /* violeta tenue */
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Indicador a la izquierda cuando está activo */
+.sidebar-link.active::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 999px;
+  background: #4f46e5; /* indigo-600 */
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, .18);
+}
+
+.sidebar__footer {
+  margin-top: auto;
+  padding: 10px 8px 6px;
+  color: #94a3b8;
+  font-size: 12px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.16);
+}
+
+
+/* Layout base */
+html, body, #root { height: 100%; margin: 0; }
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;     /* que ocupe toda la pantalla */
+}
+
+/* Sidebar: mantené tu ancho y estilos actuales */
+.sidebar {
+  flex: 0 0 240px;       /* mismo ancho que estés usando */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+/* Área de contenido */
+.app-content {
+  flex: 1;
+  min-width: 0;          /* evita overflow con tablas/grids */
+  padding: 24px;
+  overflow: auto;
+  margin: 0;             /* evita márgenes fantasma */
+}
+
+/* Por si alguna página metió margen arriba */
+.home, .products, .sales, .purchase, .gastos {
+  margin-top: 0 !important;
+  padding-top: 0;
 }

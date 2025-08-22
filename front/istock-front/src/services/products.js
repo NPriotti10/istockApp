@@ -41,3 +41,8 @@ export async function getProductById(id) {
 export async function updateProduct(id, prod) {
   return api.put(`/productos/${id}`, prod);
 }
+
+export async function getProductByBarcode(code) {
+  const { data } = await api.get(`/productos/bycode/${encodeURIComponent(code)}`);
+  return data; // ProductoDto
+}

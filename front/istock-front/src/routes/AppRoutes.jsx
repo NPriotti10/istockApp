@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "../pages/Home";
 import Products from "../pages/Products";
 import AddProduct from "../pages/AddProducts";
+import EditProduct from "../pages/EditProduct";
 
 import Sales from "../pages/Sales";
 import AddSale from "../pages/AddSale";
@@ -40,6 +41,7 @@ export default function AppRoutes() {
         <Route index element={<Home />} /> {/* "/" */}
         <Route path="/productos" element={<Products />} />
         <Route path="/productos/nuevo" element={<AddProduct />} />
+        <Route path="/productos/editar/:id" element={<EditProduct />} />
 
         <Route path="/ventas" element={<Sales />} />
         <Route path="/ventas/nueva" element={<AddSale />} />

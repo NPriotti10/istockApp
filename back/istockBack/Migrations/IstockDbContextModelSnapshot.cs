@@ -82,10 +82,16 @@ namespace istockBack.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasColumnName("fecha")
-                        .HasDefaultValueSql("(getdate())");
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("itemsJson");
 
                     b.Property<decimal>("PrecioTotal")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18, 2)")
+                        .HasColumnName("precioTotal");
 
                     b.Property<string>("Proveedor")
                         .HasMaxLength(100)
@@ -95,7 +101,7 @@ namespace istockBack.Migrations
                     b.HasKey("IdCompra")
                         .HasName("PK__Compra__077D56142EEBE7DC");
 
-                    b.ToTable("Compra");
+                    b.ToTable("Compra", (string)null);
                 });
 
             modelBuilder.Entity("istockBack.Models.GastoFijo", b =>
@@ -116,49 +122,6 @@ namespace istockBack.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GastoFijo");
-                });
-
-            modelBuilder.Entity("istockBack.Models.ItemCompra", b =>
-                {
-                    b.Property<int>("IdItemCompra")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("idItemCompra");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdItemCompra"));
-
-                    b.Property<int>("Cantidad")
-                        .HasColumnType("int")
-                        .HasColumnName("cantidad");
-
-                    b.Property<int?>("CompraIdCompra")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IdCompra")
-                        .HasColumnType("int")
-                        .HasColumnName("idCompra");
-
-                    b.Property<int>("IdProducto")
-                        .HasColumnType("int")
-                        .HasColumnName("idProducto");
-
-                    b.Property<decimal>("PrecioTotal")
-                        .HasColumnType("decimal(10, 2)")
-                        .HasColumnName("precioTotal");
-
-                    b.Property<decimal>("PrecioUnitario")
-                        .HasColumnType("decimal(10, 2)")
-                        .HasColumnName("precioUnitario");
-
-                    b.HasKey("IdItemCompra");
-
-                    b.HasIndex("CompraIdCompra");
-
-                    b.HasIndex("IdCompra");
-
-                    b.HasIndex("IdProducto");
-
-                    b.ToTable("ItemCompra");
                 });
 
             modelBuilder.Entity("istockBack.Models.ItemVenta", b =>
@@ -220,6 +183,12 @@ namespace istockBack.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdProducto"));
 
+                    b.Property<string>("CodigoBarra")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("codigoBarra");
+
                     b.Property<string>("Descripcion")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)")
@@ -253,6 +222,11 @@ namespace istockBack.Migrations
 
                     b.HasKey("IdProducto")
                         .HasName("PK__Producto__07F4A13281069226");
+
+                    b.HasIndex("CodigoBarra")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Producto_CodigoBarra")
+                        .HasFilter("[codigoBarra] IS NOT NULL");
 
                     b.HasIndex("IdCategoria");
 
@@ -302,27 +276,6 @@ namespace istockBack.Migrations
                     b.ToTable("Venta");
                 });
 
-            modelBuilder.Entity("istockBack.Models.ItemCompra", b =>
-                {
-                    b.HasOne("istockBack.Models.Compra", null)
-                        .WithMany("Items")
-                        .HasForeignKey("CompraIdCompra");
-
-                    b.HasOne("istockBack.Models.Compra", "Compra")
-                        .WithMany("ItemCompra")
-                        .HasForeignKey("IdCompra")
-                        .IsRequired();
-
-                    b.HasOne("istockBack.Models.Producto", "Producto")
-                        .WithMany("ItemCompra")
-                        .HasForeignKey("IdProducto")
-                        .IsRequired();
-
-                    b.Navigation("Compra");
-
-                    b.Navigation("Producto");
-                });
-
             modelBuilder.Entity("istockBack.Models.ItemVenta", b =>
                 {
                     b.HasOne("istockBack.Models.Producto", "Producto")
@@ -360,17 +313,8 @@ namespace istockBack.Migrations
                     b.Navigation("Productos");
                 });
 
-            modelBuilder.Entity("istockBack.Models.Compra", b =>
-                {
-                    b.Navigation("ItemCompra");
-
-                    b.Navigation("Items");
-                });
-
             modelBuilder.Entity("istockBack.Models.Producto", b =>
                 {
-                    b.Navigation("ItemCompra");
-
                     b.Navigation("ItemVenta");
                 });
 

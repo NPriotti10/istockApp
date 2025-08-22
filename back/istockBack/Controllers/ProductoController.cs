@@ -18,6 +18,44 @@ namespace istockBack.Controllers
             _context = context;
         }
 
+        // GET: api/productos/bycode/{code}
+        [HttpGet("bycode/{code}")]
+        public async Task<ActionResult<ProductoDto>> GetByCodigoBarra(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+                return BadRequest("Código inválido");
+
+            code = code.Trim();
+
+            var p = await _context.Productos
+                .AsNoTracking()
+                .Include(x => x.Categoria)
+                .FirstOrDefaultAsync(x => x.CodigoBarra == code);
+
+            if (p == null) return NotFound();
+
+            var dto = new ProductoDto
+            {
+                IdProducto = p.IdProducto,
+                Nombre = p.Nombre,
+                Descripcion = p.Descripcion,
+                PrecioVenta = p.PrecioVenta,
+                PrecioCosto = p.PrecioCosto,
+                StockActual = p.StockActual,
+                StockMinimo = p.StockMinimo,
+                IdCategoria = p.IdCategoria,
+                CodigoBarra = p.CodigoBarra,
+                Categoria = p.Categoria == null ? null : new CategoriaDto
+                {
+                    IdCategoria = p.Categoria.IdCategoria,
+                    Nombre = p.Categoria.Nombre
+                }
+            };
+
+            return Ok(dto);
+        }
+
+
         // GET: api/productos
         [HttpGet]
         public async Task<ActionResult<PagedResultDto<ProductoDto>>> GetProductos(
@@ -65,6 +103,7 @@ namespace istockBack.Controllers
                     StockActual = p.StockActual,
                     StockMinimo = p.StockMinimo,
                     IdCategoria = p.IdCategoria,
+                    CodigoBarra = p.CodigoBarra,
                     Categoria = new CategoriaDto
                     {
                         IdCategoria = p.Categoria.IdCategoria,
@@ -99,6 +138,7 @@ namespace istockBack.Controllers
                     StockActual = p.StockActual,
                     StockMinimo = p.StockMinimo,
                     IdCategoria = p.IdCategoria,
+                    CodigoBarra = p.CodigoBarra,
                     Categoria = new CategoriaDto
                     {
                         IdCategoria = p.Categoria.IdCategoria,
@@ -125,6 +165,7 @@ namespace istockBack.Controllers
                 PrecioCosto = productoDto.PrecioCosto,
                 StockActual = productoDto.StockActual,
                 StockMinimo = productoDto.StockMinimo,
+                CodigoBarra = productoDto.CodigoBarra,
                 IdCategoria = productoDto.IdCategoria
             };
 
@@ -147,29 +188,38 @@ namespace istockBack.Controllers
             return CreatedAtAction(nameof(GetProducto), new { id = producto.IdProducto }, productoDto);
         }
 
-        // PUT: api/productos/5
+        // PUT: api/productos/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProducto(int id, ProductoDto productoDto)
+        public async Task<IActionResult> PutProducto(int id, [FromBody] ProductoDto productoDto)
         {
-            if (id != productoDto.IdProducto)
-                return BadRequest();
+            if (productoDto == null)
+                return BadRequest("Body requerido.");
 
-            var producto = await _context.Productos.FindAsync(id);
+            var producto = await _context.Productos
+                .FirstOrDefaultAsync(p => p.IdProducto == id);
+
             if (producto == null)
-                return NotFound();
+                return NotFound("Producto no encontrado.");
 
-            producto.Nombre = productoDto.Nombre;
-            producto.Descripcion = productoDto.Descripcion;
+            // Actualizar campos
+            producto.Nombre = productoDto.Nombre.Trim();
+            producto.Descripcion = productoDto.Descripcion?.Trim();
             producto.PrecioVenta = productoDto.PrecioVenta;
             producto.PrecioCosto = productoDto.PrecioCosto;
             producto.StockActual = productoDto.StockActual;
             producto.StockMinimo = productoDto.StockMinimo;
             producto.IdCategoria = productoDto.IdCategoria;
 
+            // Código de barras: guardar null si viene vacío/espacios
+            producto.CodigoBarra = string.IsNullOrWhiteSpace(productoDto.CodigoBarra)
+                ? null
+                : productoDto.CodigoBarra.Trim();
+
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(new { mensaje = "Producto actualizado correctamente." });
         }
+
 
         // DELETE: api/productos/5
         [HttpDelete("{id}")]

@@ -253,17 +253,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/CompraListaDtoPagedResult"
+                  "$ref": "#/components/schemas/CompraListaDtoPagedResultDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CompraListaDtoPagedResult"
+                  "$ref": "#/components/schemas/CompraListaDtoPagedResultDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CompraListaDtoPagedResult"
+                  "$ref": "#/components/schemas/CompraListaDtoPagedResultDto"
                 }
               }
             }
@@ -283,19 +283,25 @@
               "text/plain": {
                 "schema": {
                   "type": "array",
-                  "items": { }
+                  "items": {
+                    "$ref": "#/components/schemas/CompraDetailDto"
+                  }
                 }
               },
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": { }
+                  "items": {
+                    "$ref": "#/components/schemas/CompraDetailDto"
+                  }
                 }
               },
               "text/json": {
                 "schema": {
                   "type": "array",
-                  "items": { }
+                  "items": {
+                    "$ref": "#/components/schemas/CompraDetailDto"
+                  }
                 }
               }
             }
@@ -310,17 +316,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompraDto"
+                "$ref": "#/components/schemas/CompraCreateDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompraDto"
+                "$ref": "#/components/schemas/CompraCreateDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/CompraDto"
+                "$ref": "#/components/schemas/CompraCreateDto"
               }
             }
           }
@@ -350,7 +356,24 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompraDetailDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompraDetailDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompraDetailDto"
+                }
+              }
+            }
           }
         }
       },
@@ -373,17 +396,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompraDto"
+                "$ref": "#/components/schemas/CompraCreateDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompraDto"
+                "$ref": "#/components/schemas/CompraCreateDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/CompraDto"
+                "$ref": "#/components/schemas/CompraCreateDto"
               }
             }
           }
@@ -597,6 +620,45 @@
         "responses": {
           "200": {
             "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Productos/bycode/{code}": {
+      "get": {
+        "tags": [
+          "Productos"
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductoDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductoDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductoDto"
+                }
+              }
+            }
           }
         }
       }
@@ -1055,7 +1117,7 @@
         },
         "additionalProperties": false
       },
-      "CompraDto": {
+      "CompraCreateDto": {
         "type": "object",
         "properties": {
           "proveedor": {
@@ -1066,6 +1128,35 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemCompraDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CompraDetailDto": {
+        "type": "object",
+        "properties": {
+          "idCompra": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "proveedor": {
+            "type": "string",
+            "nullable": true
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "precioTotal": {
+            "type": "number",
+            "format": "double"
           },
           "items": {
             "type": "array",
@@ -1099,7 +1190,7 @@
         },
         "additionalProperties": false
       },
-      "CompraListaDtoPagedResult": {
+      "CompraListaDtoPagedResultDto": {
         "type": "object",
         "properties": {
           "items": {
@@ -1109,19 +1200,15 @@
             },
             "nullable": true
           },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
           "page": {
             "type": "integer",
             "format": "int32"
           },
           "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalItems": {
             "type": "integer",
             "format": "int32"
           }
@@ -1149,9 +1236,17 @@
       "ItemCompraDto": {
         "type": "object",
         "properties": {
-          "idProducto": {
-            "type": "integer",
-            "format": "int32"
+          "nombre": {
+            "type": "string",
+            "nullable": true
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "precioCosto": {
+            "type": "number",
+            "format": "double"
           },
           "cantidad": {
             "type": "integer",
@@ -1229,6 +1324,10 @@
           },
           "categoria": {
             "$ref": "#/components/schemas/CategoriaDto"
+          },
+          "codigoBarra": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

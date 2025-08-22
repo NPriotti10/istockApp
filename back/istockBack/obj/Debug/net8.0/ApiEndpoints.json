@@ -124,7 +124,7 @@
     "Parameters": [],
     "ReturnTypes": [
       {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[CompraDetailDto, istockBack, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -143,8 +143,8 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "compraDto",
-        "Type": "istockBack.DTOs.CompraDto",
+        "Name": "dto",
+        "Type": "CompraCreateDto",
         "IsRequired": true
       }
     ],
@@ -164,7 +164,17 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "CompraDetailDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "istockBack.Controllers.CompraController",
@@ -180,8 +190,8 @@
         "IsRequired": true
       },
       {
-        "Name": "compraDto",
-        "Type": "istockBack.DTOs.CompraDto",
+        "Name": "dto",
+        "Type": "CompraCreateDto",
         "IsRequired": true
       }
     ],
@@ -229,7 +239,7 @@
     ],
     "ReturnTypes": [
       {
-        "Type": "PagedResult\u00601[[CompraListaDto, istockBack, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "Type": "istockBack.DTOs.PagedResultDto\u00601[[CompraListaDto, istockBack, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -477,6 +487,32 @@
       }
     ],
     "ReturnTypes": []
+  },
+  {
+    "ContainingType": "istockBack.Controllers.ProductosController",
+    "Method": "GetByCodigoBarra",
+    "RelativePath": "api/Productos/bycode/{code}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "code",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "istockBack.DTOs.ProductoDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
   },
   {
     "ContainingType": "VentasController",

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace istockBack.Models;
 
@@ -23,5 +24,7 @@ public partial class Producto
     public virtual Categoria Categoria { get; set; } = null!;
 
     public virtual ICollection<ItemVenta> ItemVenta { get; set; } = new List<ItemVenta>();
-    public virtual ICollection<ItemCompra> ItemCompra { get; set; } = new List<ItemCompra>();
+
+    [MaxLength(64)]
+    public string? CodigoBarra { get; set; }
 }
