@@ -19,7 +19,6 @@ public partial class IstockDbContext : DbContext
 
 
     public virtual DbSet<Compra> Compra { get; set; }
-    public virtual DbSet<ItemCompra> ItemCompra { get; set; }
     public virtual DbSet<ItemVenta> ItemVenta { get; set; }
 
     public virtual DbSet<Producto> Productos { get; set; }
@@ -54,37 +53,9 @@ public partial class IstockDbContext : DbContext
             e.Property(u => u.PasswordHash).IsRequired().HasMaxLength(200);
         });
 
-        modelBuilder.Entity<ItemCompra>(entity =>
-        {
-            entity.HasKey(e => e.IdItemCompra);
+        // ⛔️ ELIMINAR
+       
 
-            entity.Property(e => e.IdItemCompra).HasColumnName("idItemCompra");
-            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
-            entity.Property(e => e.IdProducto).HasColumnName("idProducto");
-            entity.Property(e => e.IdCompra).HasColumnName("idCompra");
-
-            entity.Property(e => e.PrecioUnitario)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("precioUnitario");
-
-            entity.Property(e => e.PrecioTotal)
-                .HasColumnType("decimal(10, 2)")
-                .HasColumnName("precioTotal");
-
-            
-
-            // 👇 Acá definís la relación con Producto
-            entity.HasOne(d => d.Producto)
-                .WithMany(p => p.ItemCompra)
-                .HasForeignKey(d => d.IdProducto)
-                .OnDelete(DeleteBehavior.ClientSetNull);
-
-            // 👇 También definís la relación con Compra
-            entity.HasOne(d => d.Compra)
-                .WithMany(p => p.ItemCompra)
-                .HasForeignKey(d => d.IdCompra)
-                .OnDelete(DeleteBehavior.ClientSetNull);
-        });
 
 
 
@@ -146,29 +117,60 @@ public partial class IstockDbContext : DbContext
                 .HasColumnName("precioVenta");
             entity.Property(e => e.StockActual).HasColumnName("stockActual");
             entity.Property(e => e.StockMinimo).HasColumnName("stockMinimo");
+
+            // ✅ NUEVO: columna de código de barras
+            entity.Property(e => e.CodigoBarra)
+                .HasMaxLength(64)
+                .IsUnicode(false)
+                .HasColumnName("codigoBarra");
+
+            // ✅ NUEVO: índice único filtrado (permite varios NULL)
+            entity.HasIndex(e => e.CodigoBarra)
+                .IsUnique()
+                .HasDatabaseName("UX_Producto_CodigoBarra")
+                .HasFilter("[codigoBarra] IS NOT NULL");
+
             entity.HasOne(d => d.Categoria)
                 .WithMany(p => p.Productos)
                 .HasForeignKey(d => d.IdCategoria)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Producto_Categoria");
-
-
         });
+
 
         modelBuilder.Entity<Compra>(entity =>
         {
-            entity.HasKey(e => e.IdCompra).HasName("PK__Compra__077D56142EEBE7DC");
+            entity.ToTable("Compra");
 
-            entity.Property(e => e.IdCompra).HasColumnName("idCompra");
+            entity.HasKey(e => e.IdCompra)
+                  .HasName("PK__Compra__077D56142EEBE7DC");
+
+            entity.Property(e => e.IdCompra)
+                  .HasColumnName("idCompra");
+
             entity.Property(e => e.Proveedor)
-                .HasMaxLength(100)
-                .HasColumnName("proveedor");
+                  .HasMaxLength(100)
+                  .HasColumnName("proveedor");
+
             entity.Property(e => e.Fecha)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("fecha");
-            
+                  .HasColumnType("datetime")
+                  .HasDefaultValueSql("GETDATE()")
+                  .HasColumnName("fecha");
+
+            // ✅ Total con precisión
+            entity.Property(e => e.PrecioTotal)
+                  .HasColumnType("decimal(18, 2)")
+                  .HasColumnName("precioTotal");
+
+            // ✅ Ítems serializados como JSON
+            entity.Property(e => e.ItemsJson)
+                  .HasColumnType("nvarchar(max)")
+                  .HasColumnName("itemsJson");
+
+            // Si NO marcaste la prop .Items con [NotMapped], descomenta:
+            // entity.Ignore(e => e.Items);
         });
+
 
         modelBuilder.Entity<Venta>(entity =>
         {

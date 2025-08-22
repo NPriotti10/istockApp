@@ -121,14 +121,14 @@ export default function GastosFijos() {
     <div style={styles.container}>
       <div style={styles.box}>
         <h2 style={styles.title}>
-          💸 Gastos Fijos <span style={styles.subtitle}>(USD)</span>
+          💸 Gastos Mensuales <span style={styles.subtitle}>(USD)</span>
         </h2>
 
         {err && <div style={styles.error}>{err}</div>}
 
         <form style={styles.form} onSubmit={handleSubmit}>
           <div style={styles.formGroup}>
-            <label style={styles.label}>Nombre</label>
+            <label style={styles.label}>Gasto</label>
             <input
               style={styles.input}
               value={nombre}

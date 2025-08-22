@@ -38,7 +38,7 @@ namespace istockBack.Controllers
         {
             var categoria = new Categoria
             {
-                Nombre = categoriaDto.Nombre
+                Nombre = categoriaDto.Nombre!
             };
 
             _context.Categoria.Add(categoria);
@@ -59,7 +59,7 @@ namespace istockBack.Controllers
             if (categoria == null)
                 return NotFound();
 
-            categoria.Nombre = categoriaDto.Nombre;
+            categoria.Nombre = categoriaDto.Nombre!;
             await _context.SaveChangesAsync();
 
             return NoContent();

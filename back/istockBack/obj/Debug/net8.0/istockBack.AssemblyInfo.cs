@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("istockBack")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c2ce1e81fca6de5e136d1b35179346e90802325b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c240fe606dbfee3f10be4c8ee7cfbe076a074439")]
 [assembly: System.Reflection.AssemblyProductAttribute("istockBack")]
 [assembly: System.Reflection.AssemblyTitleAttribute("istockBack")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
