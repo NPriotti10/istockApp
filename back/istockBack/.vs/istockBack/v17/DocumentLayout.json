@@ -1,13 +1,21 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Proyects\\istockApp\\back\\istockBack\\",
+  "WorkspaceRootPath": "C:\\Proyect\\istockApp\\back\\istockBack\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istockapp\\back\\istockback\\controllers\\ventacontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyect\\istockapp\\back\\istockback\\migrations\\20250823152224_nombredelamigracion.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:migrations\\20250823152224_nombredelamigracion.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyect\\istockapp\\back\\istockback\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyect\\istockapp\\back\\istockback\\controllers\\ventacontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:controllers\\ventacontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyects\\istockapp\\back\\istockback\\controllers\\productocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|c:\\proyect\\istockapp\\back\\istockback\\controllers\\productocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{BE3670F7-6586-4885-94BD-4F43E2264A76}|istockBack.csproj|solutionrelative:controllers\\productocontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
@@ -18,33 +26,62 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "20250823152224_NombreDeLaMigracion.cs",
+              "DocumentMoniker": "C:\\Proyect\\istockApp\\back\\istockBack\\Migrations\\20250823152224_NombreDeLaMigracion.cs",
+              "RelativeDocumentMoniker": "Migrations\\20250823152224_NombreDeLaMigracion.cs",
+              "ToolTip": "C:\\Proyect\\istockApp\\back\\istockBack\\Migrations\\20250823152224_NombreDeLaMigracion.cs",
+              "RelativeToolTip": "Migrations\\20250823152224_NombreDeLaMigracion.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-23T15:22:25.29Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Proyect\\istockApp\\back\\istockBack\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "C:\\Proyect\\istockApp\\back\\istockBack\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-08-23T15:14:30.427Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "VentaController.cs",
-              "DocumentMoniker": "C:\\Proyects\\istockApp\\back\\istockBack\\Controllers\\VentaController.cs",
+              "DocumentMoniker": "C:\\Proyect\\istockApp\\back\\istockBack\\Controllers\\VentaController.cs",
               "RelativeDocumentMoniker": "Controllers\\VentaController.cs",
-              "ToolTip": "C:\\Proyects\\istockApp\\back\\istockBack\\Controllers\\VentaController.cs",
+              "ToolTip": "C:\\Proyect\\istockApp\\back\\istockBack\\Controllers\\VentaController.cs",
               "RelativeToolTip": "Controllers\\VentaController.cs",
-              "ViewState": "AgIAAMEAAAAAAAAAAAAuwAIBAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIBAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-08-22T13:52:03.379Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 3,
               "Title": "ProductoController.cs",
-              "DocumentMoniker": "C:\\Proyects\\istockApp\\back\\istockBack\\Controllers\\ProductoController.cs",
+              "DocumentMoniker": "C:\\Proyect\\istockApp\\back\\istockBack\\Controllers\\ProductoController.cs",
               "RelativeDocumentMoniker": "Controllers\\ProductoController.cs",
-              "ToolTip": "C:\\Proyects\\istockApp\\back\\istockBack\\Controllers\\ProductoController.cs",
+              "ToolTip": "C:\\Proyect\\istockApp\\back\\istockBack\\Controllers\\ProductoController.cs",
               "RelativeToolTip": "Controllers\\ProductoController.cs",
               "ViewState": "AgIAAMwAAAAAAAAAAAAmwK0AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-22T13:39:09.064Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-08-22T13:39:09.064Z"
             }
           ]
         }

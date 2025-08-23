@@ -68,6 +68,13 @@ export default function Sidebar() {
         >
           Gastos Mensuales
         </NavLink>
+
+        <NavLink
+          to="/categorias"
+          className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")}
+        >
+          Categorias
+        </NavLink>
       </div>
 
       

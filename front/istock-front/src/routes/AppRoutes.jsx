@@ -24,6 +24,8 @@ import Login from "../pages/Login";
 import PrivateRoute from "./PrivateRoute";
 import ProtectedLayout from "../layouts/ProtectedLayout";
 
+import Categories from "../pages/Categories";
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -56,6 +58,8 @@ export default function AppRoutes() {
         <Route path="/compras/nueva" element={<AddPurchase />} />
         <Route path="/compras/editar/:id" element={<EditPurchase />} />
         <Route path="/compras/detalle/:id" element={<PurchaseDetail />} />
+        
+        <Route path="/categorias" element={<Categories />} />
       </Route>
 
       {/* Fallback */}
