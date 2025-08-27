@@ -158,7 +158,7 @@ export default function AddSale() {
   const handleChangeCantidad = (index, value) => {
     const nuevos = [...items];
     const prod = mapById[nuevos[index].idProducto];
-    const cantidad = Math.max(1, Number(value) || 1);
+    const cantidad = Math.max(0, Number(value) || 0);
     if (prod && cantidad > (prod.stockActual ?? 0)) {
       alert(`Stock insuficiente para ${prod.nombre}. Disponible: ${prod.stockActual}`);
       return;
@@ -211,10 +211,7 @@ export default function AddSale() {
     for (const it of items) {
       const prod = mapById[it.idProducto];
       if (!prod) continue;
-      if (!String(it.numeroSerie || "").trim()) {
-        alert(`Ingresá el número de serie para "${prod.nombre}".`);
-        return false;
-      }
+      
       if (it.cantidad > (prod.stockActual ?? 0)) {
         alert(`Stock insuficiente para "${prod.nombre}". Disponible: ${prod.stockActual}`);
         return false;
@@ -238,7 +235,7 @@ export default function AddSale() {
       items: items.map(({ idProducto, cantidad, numeroSerie }) => ({
         idProducto: Number(idProducto),
         cantidad: Number(cantidad),
-        numeroSerie: String(numeroSerie).trim(),
+        numeroSerie: (String(numeroSerie || "").trim() || null) , 
       })),
     };
 

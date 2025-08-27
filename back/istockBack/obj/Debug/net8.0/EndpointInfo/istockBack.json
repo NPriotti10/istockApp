@@ -874,6 +874,28 @@
         }
       }
     },
+    "/api/Productos/inversion": {
+      "get": {
+        "tags": [
+          "Productos"
+        ],
+        "parameters": [
+          {
+            "name": "valorDolar",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Ventas/paged": {
       "get": {
         "tags": [

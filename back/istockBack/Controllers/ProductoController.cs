@@ -155,27 +155,49 @@ namespace istockBack.Controllers
 
         // POST: api/productos
         [HttpPost]
-        public async Task<ActionResult<ProductoDto>> PostProducto(ProductoDto productoDto)
+        public async Task<ActionResult<ProductoDto>> PostProducto(ProductoDto dto)
         {
+            if (dto == null) return BadRequest("Body requerido.");
+
+            var nombre = (dto.Nombre ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(nombre))
+                return BadRequest("El nombre es obligatorio.");
+
+            // codigoBarra opcional: "" -> null
+            var codigoBarra = string.IsNullOrWhiteSpace(dto.CodigoBarra)
+                ? null
+                : dto.CodigoBarra.Trim();
+
+            // Validar categoría existente
+            var categoriaExiste = await _context.Categoria.AnyAsync(c => c.IdCategoria == dto.IdCategoria);
+            if (!categoriaExiste)
+                return BadRequest("Categoría inexistente.");
+
+            // Si vino código de barras, validar duplicados
+            if (codigoBarra != null)
+            {
+                var duplicado = await _context.Productos.AnyAsync(p => p.CodigoBarra == codigoBarra);
+                if (duplicado) return Conflict("Ya existe un producto con ese código de barras.");
+            }
+
             var producto = new Producto
             {
-                Nombre = productoDto.Nombre,
-                Descripcion = productoDto.Descripcion,
-                PrecioVenta = productoDto.PrecioVenta,
-                PrecioCosto = productoDto.PrecioCosto,
-                StockActual = productoDto.StockActual,
-                StockMinimo = productoDto.StockMinimo,
-                CodigoBarra = productoDto.CodigoBarra,
-                IdCategoria = productoDto.IdCategoria
+                Nombre = nombre,
+                Descripcion = dto.Descripcion?.Trim(),
+                PrecioVenta = dto.PrecioVenta,
+                PrecioCosto = dto.PrecioCosto,
+                StockActual = dto.StockActual,
+                StockMinimo = dto.StockMinimo,
+                CodigoBarra = codigoBarra,
+                IdCategoria = dto.IdCategoria
             };
 
             _context.Productos.Add(producto);
             await _context.SaveChangesAsync();
 
-            productoDto.IdProducto = producto.IdProducto;
-
+            // Armar DTO de respuesta con la categoría
             var categoria = await _context.Categoria
-                .Where(c => c.IdCategoria == productoDto.IdCategoria)
+                .Where(c => c.IdCategoria == dto.IdCategoria)
                 .Select(c => new CategoriaDto
                 {
                     IdCategoria = c.IdCategoria,
@@ -183,42 +205,69 @@ namespace istockBack.Controllers
                 })
                 .FirstOrDefaultAsync();
 
-            productoDto.Categoria = categoria ?? new CategoriaDto();
+            var result = new ProductoDto
+            {
+                IdProducto = producto.IdProducto,
+                Nombre = producto.Nombre,
+                Descripcion = producto.Descripcion,
+                PrecioVenta = producto.PrecioVenta,
+                PrecioCosto = producto.PrecioCosto,
+                StockActual = producto.StockActual,
+                StockMinimo = producto.StockMinimo,
+                CodigoBarra = producto.CodigoBarra,
+                IdCategoria = producto.IdCategoria,
+                Categoria = categoria ?? new CategoriaDto()
+            };
 
-            return CreatedAtAction(nameof(GetProducto), new { id = producto.IdProducto }, productoDto);
+            return CreatedAtAction(nameof(GetProducto), new { id = producto.IdProducto }, result);
         }
 
         // PUT: api/productos/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProducto(int id, [FromBody] ProductoDto productoDto)
+        public async Task<IActionResult> PutProducto(int id, [FromBody] ProductoDto dto)
         {
-            if (productoDto == null)
-                return BadRequest("Body requerido.");
+            if (dto == null) return BadRequest("Body requerido.");
 
-            var producto = await _context.Productos
-                .FirstOrDefaultAsync(p => p.IdProducto == id);
+            var producto = await _context.Productos.FirstOrDefaultAsync(p => p.IdProducto == id);
+            if (producto == null) return NotFound("Producto no encontrado.");
 
-            if (producto == null)
-                return NotFound("Producto no encontrado.");
+            var nombre = (dto.Nombre ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(nombre))
+                return BadRequest("El nombre es obligatorio.");
+
+            // codigoBarra opcional: "" -> null
+            var codigoBarra = string.IsNullOrWhiteSpace(dto.CodigoBarra)
+                ? null
+                : dto.CodigoBarra.Trim();
+
+            // Validar categoría existente
+            var categoriaExiste = await _context.Categoria.AnyAsync(c => c.IdCategoria == dto.IdCategoria);
+            if (!categoriaExiste)
+                return BadRequest("Categoría inexistente.");
+
+            // Si cambió el código y no es null, chequear duplicados
+            if (codigoBarra != producto.CodigoBarra && codigoBarra != null)
+            {
+                var duplicado = await _context.Productos
+                    .AnyAsync(p => p.CodigoBarra == codigoBarra && p.IdProducto != id);
+                if (duplicado) return Conflict("Ya existe un producto con ese código de barras.");
+            }
 
             // Actualizar campos
-            producto.Nombre = productoDto.Nombre.Trim();
-            producto.Descripcion = productoDto.Descripcion?.Trim();
-            producto.PrecioVenta = productoDto.PrecioVenta;
-            producto.PrecioCosto = productoDto.PrecioCosto;
-            producto.StockActual = productoDto.StockActual;
-            producto.StockMinimo = productoDto.StockMinimo;
-            producto.IdCategoria = productoDto.IdCategoria;
-
-            // Código de barras: guardar null si viene vacío/espacios
-            producto.CodigoBarra = string.IsNullOrWhiteSpace(productoDto.CodigoBarra)
-                ? null
-                : productoDto.CodigoBarra.Trim();
+            producto.Nombre = nombre;
+            producto.Descripcion = dto.Descripcion?.Trim();
+            producto.PrecioVenta = dto.PrecioVenta;
+            producto.PrecioCosto = dto.PrecioCosto;
+            producto.StockActual = dto.StockActual;
+            producto.StockMinimo = dto.StockMinimo;
+            producto.IdCategoria = dto.IdCategoria;
+            producto.CodigoBarra = codigoBarra;
 
             await _context.SaveChangesAsync();
 
             return Ok(new { mensaje = "Producto actualizado correctamente." });
         }
+
 
 
         // DELETE: api/productos/5
@@ -234,5 +283,48 @@ namespace istockBack.Controllers
 
             return NoContent();
         }
+
+        // GET: api/productos/inversion?valorDolar=1234.56
+        [HttpGet("inversion")]
+        public async Task<IActionResult> GetInversion([FromQuery] decimal? valorDolar)
+        {
+            var usd = 30 + valorDolar.GetValueOrDefault(1m);
+            if (usd <= 0) usd = 1m;
+
+            var productos = await _context.Productos
+                .AsNoTracking()
+                .Select(p => new
+                {
+                    p.PrecioCosto,
+                    p.StockActual,
+                    Categoria = p.Categoria != null ? p.Categoria.Nombre : null
+                })
+                .ToListAsync();
+
+            decimal totalUSD = 0m;
+            decimal totalARS = 0m;
+
+            foreach (var p in productos)
+            {
+                var nombreCat = (p.Categoria ?? "").Trim().ToLowerInvariant();
+                var esAccesorio = nombreCat == "accesorio" || nombreCat == "accesorios";
+
+                // costo unitario en USD/ARS (normalizado por categoría)
+                var costoUSD = esAccesorio ? (p.PrecioCosto / usd) : p.PrecioCosto;  // accesorios vienen en ARS → dividir
+                var costoARS = esAccesorio ? p.PrecioCosto : (p.PrecioCosto * usd);  // resto vienen en USD → multiplicar
+
+                totalUSD += decimal.Round(costoUSD * p.StockActual, 2);
+                totalARS += decimal.Round(costoARS * p.StockActual, 2);
+            }
+
+            return Ok(new
+            {
+                totalCostoUSD = Math.Round(totalUSD, 2),
+                totalCostoARS = Math.Round(totalARS, 2),
+                valorDolarUsado = usd
+            });
+        }
+
+
     }
 }

@@ -21,14 +21,15 @@ export default function SaleDetail() {
     cliente,
     fecha,
     formaPago,
-    productos,
+    productos,          // array de items
     valorDolar,
     equipoPartePago,
-    precioTotal,
-    gananciaTotal,
-    precioTotalARS,
-    gananciaTotalARS
+    precioTotal,        // total USD de la venta
+    gananciaTotal       // total USD de la venta
   } = venta;
+
+  const fmt = (n) => Number(n ?? 0).toFixed(2);
+  const usdToArs = (nUsd) => Number(nUsd ?? 0) * Number(valorDolar ?? 1);
 
   return (
     <div style={styles.container}>
@@ -38,62 +39,72 @@ export default function SaleDetail() {
         <div style={styles.dataRow}><strong>Cliente:</strong> {cliente}</div>
         <div style={styles.dataRow}><strong>Fecha:</strong> {new Date(fecha).toLocaleDateString()}</div>
         {formaPago && <div style={styles.dataRow}><strong>Forma de pago:</strong> {formaPago}</div>}
-        <div style={styles.dataRow}><strong>Valor del dólar:</strong> {valorDolar || 0} ARS</div>
+        <div style={styles.dataRow}><strong>Valor del dólar:</strong> ${fmt(valorDolar)} ARS</div>
         <div style={styles.dataRow}><strong>Equipo tomado como parte de pago:</strong> {equipoPartePago || "Ninguno"}</div>
       </div>
 
-      <h3 style={styles.subtitle}>📦LISTADO DE PRODUCTOS</h3>
+      <h3 style={styles.subtitle}>📦 LISTADO DE PRODUCTOS</h3>
       <div style={{ overflowX: "auto" }}>
         <table style={styles.table}>
           <thead>
             <tr style={styles.headerRow}>
               <th style={styles.cell}>Producto</th>
               <th style={styles.cell}>Cantidad</th>
-              <th style={styles.cell}>Precio USD</th>
-              <th style={styles.cell}>Precio ARS</th>
+              <th style={styles.cell}>Total USD</th>
+              <th style={styles.cell}>Total ARS</th>
               <th style={styles.cell}>Ganancia USD</th>
               <th style={styles.cell}>Ganancia ARS</th>
               <th style={styles.cell}>Num Serie</th>
             </tr>
           </thead>
           <tbody>
-            {productos?.map((item, idx) => (
-              <tr
-                key={idx}
-                style={{
-                  backgroundColor: idx % 2 === 0 ? "#f8fafc" : "white",
-                  transition: "background-color 0.2s ease-in-out",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#e0f2fe")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor =
-                    idx % 2 === 0 ? "#f8fafc" : "white")
-                }
-              >
-                <td style={styles.cell}>{item.nombreProducto}</td>
-                <td style={styles.cell}>{item.cantidad}</td>
-                <td style={styles.cell}>${(item.precioUnitario) * item.cantidad}</td>
-                <td style={styles.cell}>
-                  ${(item.precioUnitario * valorDolar * item.cantidad).toFixed(2)}
-                </td>
-                <td style={styles.cell}>${item.ganancia}</td>
-                <td style={styles.cell}>
-                  ${(item.ganancia * valorDolar).toFixed(2)}
-                </td>
-                <td style={styles.cell}>{item.numeroSerie || "-"}</td>
-              </tr>
-            ))}
+            {productos?.map((item, idx) => {
+              // Nombre del producto: usar snapshot y sólo caer a producto?.nombre si existiera
+              const nombre =
+                item.nombreProducto ??
+                item.producto?.nombre ??
+                "(producto eliminado)";
+
+              // Totales y ganancias por línea: ya vienen en USD desde el backend
+              const lineUsd = Number(item.precioTotal ?? (item.precioUnitario ?? 0) * (item.cantidad ?? 0));
+              const lineArs = usdToArs(lineUsd);
+              const gainUsd = Number(item.ganancia ?? 0);
+              const gainArs = usdToArs(gainUsd);
+
+              return (
+                <tr
+                  key={item.idItemVenta ?? idx}
+                  style={{
+                    backgroundColor: idx % 2 === 0 ? "#f8fafc" : "white",
+                    transition: "background-color 0.2s ease-in-out",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "#e0f2fe")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      idx % 2 === 0 ? "#f8fafc" : "white")
+                  }
+                >
+                  <td style={styles.cell}>{nombre}</td>
+                  <td style={styles.cell}>{item.cantidad}</td>
+                  <td style={styles.cell}>${fmt(lineUsd)}</td>
+                  <td style={styles.cell}>${fmt(lineArs)}</td>
+                  <td style={styles.cell}>${fmt(gainUsd)}</td>
+                  <td style={styles.cell}>${fmt(gainArs)}</td>
+                  <td style={styles.cell}>{item.numeroSerie || "-"}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       <div style={styles.sectionTotal}>
-        <p style={styles.total}><strong>💵 PRECIO TOTAL:</strong> ${precioTotal} USD</p>
-        <p style={styles.total}><strong>💵 PRECIO TOTAL:</strong> ${(precioTotal) * valorDolar} ARS</p>
-        <p style={styles.total}><strong>📈 GANANCIA TOTAL:</strong> ${gananciaTotal} USD</p>
-        <p style={styles.total}><strong>📈 GANANCIA TOTAL:</strong> ${(gananciaTotal) * valorDolar} ARS</p>
+        <p style={styles.total}><strong>💵 PRECIO TOTAL:</strong> ${fmt(precioTotal)} USD</p>
+        <p style={styles.total}><strong>💵 PRECIO TOTAL:</strong> ${fmt(usdToArs(precioTotal))} ARS</p>
+        <p style={styles.total}><strong>📈 GANANCIA TOTAL:</strong> ${fmt(gananciaTotal)} USD</p>
+        <p style={styles.total}><strong>📈 GANANCIA TOTAL:</strong> ${fmt(usdToArs(gananciaTotal))} ARS</p>
       </div>
 
       <Link

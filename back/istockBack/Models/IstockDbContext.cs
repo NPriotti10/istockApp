@@ -54,7 +54,7 @@ public partial class IstockDbContext : DbContext
         });
 
         // ⛔️ ELIMINAR
-       
+
 
 
 
@@ -64,34 +64,61 @@ public partial class IstockDbContext : DbContext
             entity.HasKey(e => e.IdItemVenta);
 
             entity.Property(e => e.IdItemVenta).HasColumnName("idItemVenta");
-            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
-            entity.Property(e => e.IdProducto).HasColumnName("idProducto");
             entity.Property(e => e.IdVenta).HasColumnName("idVenta");
 
+            // FK a Producto: columna nullable para poder hacer SetNull al borrar el producto
+            entity.Property(e => e.IdProducto)
+                .HasColumnName("idProducto");
+
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+
+            entity.Property(e => e.NumeroSerie)
+                .HasMaxLength(200)
+                .HasColumnName("numeroSerie");
+
+            // Importes en USD con dos decimales
             entity.Property(e => e.PrecioUnitario)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("precioUnitario");
 
+            entity.Property(e => e.CostoUnitario)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("costoUnitario");
+
             entity.Property(e => e.PrecioTotal)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("precioTotal");
 
             entity.Property(e => e.Ganancia)
-                .HasColumnType("decimal(10, 2)")
+                .HasColumnType("decimal(18, 2)")
                 .HasColumnName("ganancia");
 
-            // 👇 Acá definís la relación con Producto
-            entity.HasOne(d => d.Producto)
-                .WithMany(p => p.ItemVenta)
-                .HasForeignKey(d => d.IdProducto)
-                .OnDelete(DeleteBehavior.ClientSetNull);
+            // SNAPSHOTS del producto al momento de la venta
+            entity.Property(e => e.NombreProducto)
+                .HasMaxLength(300)
+                .HasColumnName("nombreProducto");
 
-            // 👇 También definís la relación con Venta
+            entity.Property(e => e.CodigoBarra)
+                .HasMaxLength(100)
+                .HasColumnName("codigoBarra");
+
+            entity.Property(e => e.CategoriaNombre)
+                .HasMaxLength(200)
+                .HasColumnName("categoriaNombre");
+
+            // Relación con Venta: si se borra la venta, se borran sus items
             entity.HasOne(d => d.Venta)
                 .WithMany(p => p.ItemVenta)
                 .HasForeignKey(d => d.IdVenta)
-                .OnDelete(DeleteBehavior.ClientSetNull);
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Relación con Producto: opcional; al borrar el producto, se pone NULL en la FK
+            entity.HasOne(d => d.Producto)
+                .WithMany(p => p.ItemVenta)
+                .HasForeignKey(d => d.IdProducto)
+                .OnDelete(DeleteBehavior.SetNull);
         });
+
 
 
 

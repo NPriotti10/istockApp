@@ -1,14 +1,22 @@
-# Node.js (frontend)
-node_modules/
-build/
-.env
+# .NET / Visual Studio
+**/bin/
+**/obj/
+**/.vs/
 
-# .NET (backend)
-bin/
-obj/
-.vscode/
+# Node / Frontend
+**/node_modules/
+**/dist/
+**/build/
+
+# Logs / temporales
+*.log
+*.cache
+*.pdb
+*.dll
+*.exe
 *.user
 *.suo
+*.xlsx
 
-# Excel Backups
-Backups/
+# Entornos
+.env

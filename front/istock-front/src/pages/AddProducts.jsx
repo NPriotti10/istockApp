@@ -13,7 +13,7 @@ export default function AddProduct() {
     stockActual: "",
     stockMinimo: "",
     idCategoria: "",
-    codigoBarra: "",     // ✅ nuevo campo
+    codigoBarra: "", // opcional
   });
 
   const [categorias, setCategorias] = useState([]);
@@ -57,26 +57,26 @@ export default function AddProduct() {
     if (form.stockActual === "" || isNaN(Number(form.stockActual))) return alert("Stock actual inválido.");
     if (form.stockMinimo === "" || isNaN(Number(form.stockMinimo))) return alert("Stock mínimo inválido.");
 
-    try {
-      // Enviamos tal cual el objeto form (incluye codigoBarra)
-      await nuevoProduct({
-        ...form,
-        // por seguridad, nos aseguramos que idCategoria sea número
-        idCategoria: Number(form.idCategoria),
-      });
+    // ⚠️ clave: mandar null si el código está vacío
+    const payload = {
+      ...form,
+      idCategoria: Number(form.idCategoria),
+      codigoBarra: (form.codigoBarra ?? "").trim() ? (form.codigoBarra ?? "").trim() : null,
+    };
 
-      // si venías de otra pantalla (por ejemplo AddSale) y querés volver
+    try {
+      await nuevoProduct(payload);
+
+      // redirect opcional
       const params = new URLSearchParams(location.search);
       const volver = params.get("redirectTo");
       if (volver) {
-        // usamos el nombre del form (antes se usaba una variable inexistente 'nombre')
         navigate(`${volver}?equipoPartePago=${encodeURIComponent(form.nombre)}`);
       } else {
         navigate("/productos");
       }
     } catch (err) {
       console.error("Error al agregar producto:", err);
-      // si el backend devuelve 409 por índice único de código de barras:
       if (err?.response?.status === 409) {
         alert("Ya existe un producto con ese código de barras.");
       } else {
@@ -104,7 +104,7 @@ export default function AddProduct() {
           <input type="text" name="descripcion" value={form.descripcion} onChange={handleChange} style={input} />
         </label>
 
-        {/* ✅ NUEVO CAMPO */}
+        {/* OPCIONAL */}
         <label style={label}>
           Código de barras (opcional):
           <input

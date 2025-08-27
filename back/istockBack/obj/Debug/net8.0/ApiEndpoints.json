@@ -408,7 +408,7 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "productoDto",
+        "Name": "dto",
         "Type": "istockBack.DTOs.ProductoDto",
         "IsRequired": true
       }
@@ -465,7 +465,7 @@
         "IsRequired": true
       },
       {
-        "Name": "productoDto",
+        "Name": "dto",
         "Type": "istockBack.DTOs.ProductoDto",
         "IsRequired": true
       }
@@ -513,6 +513,22 @@
         "StatusCode": 200
       }
     ]
+  },
+  {
+    "ContainingType": "istockBack.Controllers.ProductosController",
+    "Method": "GetInversion",
+    "RelativePath": "api/Productos/inversion",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "valorDolar",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
   },
   {
     "ContainingType": "VentasController",
@@ -580,7 +596,7 @@
         "IsRequired": true
       },
       {
-        "Name": "ventaDto",
+        "Name": "dto",
         "Type": "istockBack.DTOs.VentaDto",
         "IsRequired": true
       }

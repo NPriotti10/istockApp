@@ -1,8 +1,9 @@
+// src/pages/Products.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getDolarValue } from "../services/dolar";
 import { getAllCategorias } from "../services/categorias";
-import { getProductsPaged, deleteProduct } from "../services/products";
+import { getProductsPaged, deleteProduct, getInventoryInvestment } from "../services/products";
 import Pagination from "../components/Pagination";
 
 const USD_OVERRIDE_KEY = "usd_override_v1";
@@ -25,13 +26,17 @@ export default function Products() {
   const [updatingDolar, setUpdatingDolar] = useState(false);
   const [dolarError, setDolarError] = useState("");
 
+  // Inversión total (costo * stock)
+  const [inv, setInv] = useState({ totalCostoUSD: 0, totalCostoARS: 0 });
+
   // Utilidad moneda
   const currency = (n) =>
     typeof n === "number" && !Number.isNaN(n) ? `$${n.toFixed(2)}` : "-";
 
   // Helper: ¿es accesorio?
   const esAccesorio = (prod) =>
-    (prod?.categoria?.nombre || "").trim().toLowerCase() === "accesorio";
+    (prod?.categoria?.nombre || "").trim().toLowerCase() === "accesorio" ||
+    (prod?.categoria?.nombre || "").trim().toLowerCase() === "accesorios";
 
   // Cargar dólar y categorías una vez
   useEffect(() => {
@@ -96,6 +101,18 @@ export default function Products() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, selectedCategory, data.pageSize]);
 
+  // Traer inversión total cada vez que cambia el dólar efectivo
+  useEffect(() => {
+    const v = Number(dolar);
+    if (!v || v <= 0) return;
+    getInventoryInvestment(v)
+      .then((res) => setInv(res || { totalCostoUSD: 0, totalCostoARS: 0 }))
+      .catch(() => {
+        // si falla, lo dejamos en 0 sin romper la UI
+        setInv({ totalCostoUSD: 0, totalCostoARS: 0 });
+      });
+  }, [dolar]);
+
   // Eliminar y recargar la página actual
   async function handleDelete(idProducto) {
     if (!confirm("¿Estás seguro de eliminar este producto?")) return;
@@ -103,6 +120,9 @@ export default function Products() {
       await deleteProduct(idProducto);
       const isLastItemOnPage = data.items.length === 1 && data.page > 1;
       load(isLastItemOnPage ? data.page - 1 : data.page);
+      // refrescamos inversión tras eliminar
+      const v = Number(dolar) || 1;
+      getInventoryInvestment(v).then(setInv).catch(() => {});
     } catch (err) {
       console.error("Error al eliminar:", err);
     }
@@ -212,6 +232,21 @@ export default function Products() {
 
         {dolarError ? <span style={{ color: "#B91C1C", fontSize: 12 }}>{dolarError}</span> : null}
       </form>
+
+      {/* Resumen de inversión */}
+      <div style={{
+        margin: "12px 0 16px",
+        padding: 12,
+        border: "1px solid #e5e7eb",
+        borderRadius: 8,
+        background: "#f9fafb",
+        display: "flex",
+        gap: 16,
+        flexWrap: "wrap"
+      }}>
+        <div><strong>Inversión total (USD):</strong> {currency(Number(inv.totalCostoUSD || 0))}</div>
+        <div><strong>Inversión total (ARS):</strong> {currency(Number(inv.totalCostoARS || 0))}</div>
+      </div>
 
       {/* Encabezado */}
       <div

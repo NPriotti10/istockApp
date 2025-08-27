@@ -46,3 +46,11 @@ export async function getProductByBarcode(code) {
   const { data } = await api.get(`/productos/bycode/${encodeURIComponent(code)}`);
   return data; // ProductoDto
 }
+
+// GET: /api/productos/inversion?valorDolar=xxxx
+export async function getInventoryInvestment(valorDolar) {
+  const { data } = await api.get("/productos/inversion", {
+    params: { valorDolar }
+  });
+  return data; // { totalCostoUSD, totalCostoARS, valorDolarUsado }
+}
