@@ -163,15 +163,20 @@ namespace istockBack.Controllers
             if (string.IsNullOrWhiteSpace(nombre))
                 return BadRequest("El nombre es obligatorio.");
 
-            // codigoBarra opcional: "" -> null
+            // codigoBarra opcional: "" -> null (y trim si viene)
             var codigoBarra = string.IsNullOrWhiteSpace(dto.CodigoBarra)
-                ? null
+                ? (string?)null
                 : dto.CodigoBarra.Trim();
 
-            // Validar categoría existente
-            var categoriaExiste = await _context.Categoria.AnyAsync(c => c.IdCategoria == dto.IdCategoria);
-            if (!categoriaExiste)
+            // Buscar categoría y validar existencia
+            var categoria = await _context.Categoria.FindAsync(dto.IdCategoria);
+            if (categoria == null)
                 return BadRequest("Categoría inexistente.");
+
+            // ¿Es 'Usados'?
+            var catNombre = (categoria.Nombre ?? "").Trim();
+            var esUsados = catNombre.Equals("Usados", StringComparison.OrdinalIgnoreCase)
+                        || catNombre.Equals("Usado", StringComparison.OrdinalIgnoreCase);
 
             // Si vino código de barras, validar duplicados
             if (codigoBarra != null)
@@ -187,24 +192,15 @@ namespace istockBack.Controllers
                 PrecioVenta = dto.PrecioVenta,
                 PrecioCosto = dto.PrecioCosto,
                 StockActual = dto.StockActual,
-                StockMinimo = dto.StockMinimo,
-                CodigoBarra = codigoBarra,
+                StockMinimo = esUsados ? 0 : dto.StockMinimo,   // 👈 regla Usados
+                CodigoBarra = codigoBarra,                      // opcional
                 IdCategoria = dto.IdCategoria
             };
 
             _context.Productos.Add(producto);
             await _context.SaveChangesAsync();
 
-            // Armar DTO de respuesta con la categoría
-            var categoria = await _context.Categoria
-                .Where(c => c.IdCategoria == dto.IdCategoria)
-                .Select(c => new CategoriaDto
-                {
-                    IdCategoria = c.IdCategoria,
-                    Nombre = c.Nombre
-                })
-                .FirstOrDefaultAsync();
-
+            // DTO de respuesta (incluye categoría)
             var result = new ProductoDto
             {
                 IdProducto = producto.IdProducto,
@@ -216,7 +212,7 @@ namespace istockBack.Controllers
                 StockMinimo = producto.StockMinimo,
                 CodigoBarra = producto.CodigoBarra,
                 IdCategoria = producto.IdCategoria,
-                Categoria = categoria ?? new CategoriaDto()
+                Categoria = new CategoriaDto { IdCategoria = categoria.IdCategoria, Nombre = categoria.Nombre }
             };
 
             return CreatedAtAction(nameof(GetProducto), new { id = producto.IdProducto }, result);
@@ -237,15 +233,20 @@ namespace istockBack.Controllers
 
             // codigoBarra opcional: "" -> null
             var codigoBarra = string.IsNullOrWhiteSpace(dto.CodigoBarra)
-                ? null
+                ? (string?)null
                 : dto.CodigoBarra.Trim();
 
-            // Validar categoría existente
-            var categoriaExiste = await _context.Categoria.AnyAsync(c => c.IdCategoria == dto.IdCategoria);
-            if (!categoriaExiste)
+            // Buscar categoría y validar existencia
+            var categoria = await _context.Categoria.FindAsync(dto.IdCategoria);
+            if (categoria == null)
                 return BadRequest("Categoría inexistente.");
 
-            // Si cambió el código y no es null, chequear duplicados
+            // ¿Es 'Usados'?
+            var catNombre = (categoria.Nombre ?? "").Trim();
+            var esUsados = catNombre.Equals("Usados", StringComparison.OrdinalIgnoreCase)
+                        || catNombre.Equals("Usado", StringComparison.OrdinalIgnoreCase);
+
+            // Si cambió el código y no es null, chequear duplicados (excluyendo este producto)
             if (codigoBarra != producto.CodigoBarra && codigoBarra != null)
             {
                 var duplicado = await _context.Productos
@@ -259,7 +260,7 @@ namespace istockBack.Controllers
             producto.PrecioVenta = dto.PrecioVenta;
             producto.PrecioCosto = dto.PrecioCosto;
             producto.StockActual = dto.StockActual;
-            producto.StockMinimo = dto.StockMinimo;
+            producto.StockMinimo = esUsados ? 0 : dto.StockMinimo;   // 👈 regla Usados
             producto.IdCategoria = dto.IdCategoria;
             producto.CodigoBarra = codigoBarra;
 
@@ -267,6 +268,7 @@ namespace istockBack.Controllers
 
             return Ok(new { mensaje = "Producto actualizado correctamente." });
         }
+
 
 
 

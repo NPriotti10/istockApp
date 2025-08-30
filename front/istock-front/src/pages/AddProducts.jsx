@@ -1,5 +1,5 @@
 // src/pages/AddProduct.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { nuevoProduct } from "../services/products";
 import { getAllCategorias } from "../services/categorias";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
@@ -13,7 +13,7 @@ export default function AddProduct() {
     stockActual: "",
     stockMinimo: "",
     idCategoria: "",
-    codigoBarra: "", // opcional
+    codigoBarra: "",
   });
 
   const [categorias, setCategorias] = useState([]);
@@ -21,7 +21,7 @@ export default function AddProduct() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  // si viene predefinida por query (?categoria=3) la seteamos
+  // preselección por query (?categoria=3)
   useEffect(() => {
     const categoriaPredefinida = searchParams.get("categoria");
     if (categoriaPredefinida) {
@@ -35,10 +35,22 @@ export default function AddProduct() {
     });
   }, []);
 
+  // ¿La categoría seleccionada es "Usado/Usados"?
+  const esUsados = useMemo(() => {
+    const cat = categorias.find((c) => Number(c.idCategoria) === Number(form.idCategoria));
+    const nombre = (cat?.nombre || "").trim().toLowerCase();
+    return nombre === "usados" || nombre === "usado";
+  }, [categorias, form.idCategoria]);
+
+  // Si es "Usados", fijar automáticamente: stockMinimo=0 y stockActual=1
+  useEffect(() => {
+    if (esUsados) {
+      setForm((f) => ({ ...f, stockMinimo: 0, stockActual: 1 }));
+    }
+  }, [esUsados]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    // casteo a número para estos campos
     const numericFields = ["precioCosto", "precioVenta", "stockActual", "stockMinimo", "idCategoria"];
     setForm((prev) => ({
       ...prev,
@@ -49,25 +61,34 @@ export default function AddProduct() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // validaciones simples
     if (!form.nombre?.trim()) return alert("El nombre es obligatorio.");
     if (!form.idCategoria) return alert("Seleccioná una categoría.");
     if (form.precioVenta === "" || isNaN(Number(form.precioVenta))) return alert("Precio de venta inválido.");
     if (form.precioCosto === "" || isNaN(Number(form.precioCosto))) return alert("Precio de costo inválido.");
-    if (form.stockActual === "" || isNaN(Number(form.stockActual))) return alert("Stock actual inválido.");
-    if (form.stockMinimo === "" || isNaN(Number(form.stockMinimo))) return alert("Stock mínimo inválido.");
 
-    // ⚠️ clave: mandar null si el código está vacío
-    const payload = {
-      ...form,
-      idCategoria: Number(form.idCategoria),
-      codigoBarra: (form.codigoBarra ?? "").trim() ? (form.codigoBarra ?? "").trim() : null,
-    };
+    // Validaciones de stock según categoría
+    if (esUsados) {
+      // forzamos 1 y 0
+      if (Number(form.stockActual ?? 0) !== 1) {
+        setForm((f) => ({ ...f, stockActual: 1 }));
+      }
+      if (Number(form.stockMinimo ?? 0) !== 0) {
+        setForm((f) => ({ ...f, stockMinimo: 0 }));
+      }
+    } else {
+      if (form.stockActual === "" || isNaN(Number(form.stockActual))) return alert("Stock actual inválido.");
+      if (form.stockMinimo === "" || isNaN(Number(form.stockMinimo))) return alert("Stock mínimo inválido.");
+    }
 
     try {
-      await nuevoProduct(payload);
+      await nuevoProduct({
+        ...form,
+        idCategoria: Number(form.idCategoria),
+        // valores finales asegurados
+        stockActual: esUsados ? 1 : Number(form.stockActual || 0),
+        stockMinimo: esUsados ? 0 : Number(form.stockMinimo || 0),
+      });
 
-      // redirect opcional
       const params = new URLSearchParams(location.search);
       const volver = params.get("redirectTo");
       if (volver) {
@@ -85,7 +106,6 @@ export default function AddProduct() {
     }
   };
 
-  // estilos mínimos (seguimos tu patrón)
   const input = { padding: 8, border: "1px solid #ccc", borderRadius: 6 };
   const label = { display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 };
 
@@ -104,7 +124,6 @@ export default function AddProduct() {
           <input type="text" name="descripcion" value={form.descripcion} onChange={handleChange} style={input} />
         </label>
 
-        {/* OPCIONAL */}
         <label style={label}>
           Código de barras (opcional):
           <input
@@ -127,14 +146,31 @@ export default function AddProduct() {
           <input type="number" name="precioVenta" value={form.precioVenta} onChange={handleChange} required style={input} />
         </label>
 
+        {/* ✅ CORREGIDO: name="stockActual" y valor fijo 1 si es Usados */}
         <label style={label}>
-          Stock Actual:
-          <input type="number" name="stockActual" value={form.stockActual} onChange={handleChange} required style={input} />
+          Stock Actual {esUsados && <small style={{ color: "#2563eb" }}>(Usados fija 1)</small>}
+          <input
+            type="number"
+            name="stockActual"
+            value={esUsados ? 1 : form.stockActual}
+            onChange={handleChange}
+            required
+            disabled={esUsados}
+            style={{ ...input, background: esUsados ? "#f3f4f6" : "#fff" }}
+          />
         </label>
 
         <label style={label}>
-          Stock Mínimo:
-          <input type="number" name="stockMinimo" value={form.stockMinimo} onChange={handleChange} required style={input} />
+          Stock Mínimo {esUsados && <small style={{ color: "#2563eb" }}>(Usados fija 0)</small>}
+          <input
+            type="number"
+            name="stockMinimo"
+            value={esUsados ? 0 : form.stockMinimo}
+            onChange={handleChange}
+            required={!esUsados}
+            disabled={esUsados}
+            style={{ ...input, background: esUsados ? "#f3f4f6" : "#fff" }}
+          />
         </label>
 
         <label style={label}>

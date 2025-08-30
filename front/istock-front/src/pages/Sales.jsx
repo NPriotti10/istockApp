@@ -1,33 +1,44 @@
+// src/pages/Sales.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { getSalesPaged, deleteSale } from "../services/sales";
+import { getSalesPaged, getAllSales, deleteSale } from "../services/sales";
 import { Link } from "react-router-dom";
-import Pagination from "../components/Pagination"; // ⬅️ importar tu componente
+import Pagination from "../components/Pagination";
 
 export default function Sales() {
-  const [sales, setSales] = useState([]);
-  const [typed, setTyped] = useState(""); // input del buscador con debounce
+  const [sales, setSales] = useState([]);          // lista paginada (modo normal)
+  const [allSales, setAllSales] = useState([]);    // lista completa (modo mes)
+
+  // filtros
+  const [typed, setTyped] = useState("");          // input del buscador con debounce
   const [search, setSearch] = useState("");
+  const [month, setMonth] = useState("");          // 'YYYY-MM' (input type=month)
+
+  // paginación
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+
   const [loading, setLoading] = useState(false);
 
-  // debounce 300ms
+  // Modo “mes”: si hay mes seleccionado, se filtra localmente
+  const filterByMonth = Boolean(month);
+
+  // debounce buscador (300ms)
   useEffect(() => {
     const t = setTimeout(() => {
       setPage(1);
-      setSearch(typed);
+      setSearch(typed.trim());
     }, 300);
     return () => clearTimeout(t);
   }, [typed]);
 
-  const fetchData = async () => {
+  // Traer ventas (modo normal: paginado en backend)
+  const fetchPaged = async () => {
     setLoading(true);
     try {
       const res = await getSalesPaged({ page, pageSize, search });
-      // Espera shape: { items, page, pageSize, totalPages, totalItems }
       if (Array.isArray(res)) {
-        // fallback por si aún no tenés paginado en back (temporal)
+        // fallback por si el back devolviera array
         const start = (page - 1) * pageSize;
         setSales(res.slice(start, start + pageSize));
         setTotalItems(res.length);
@@ -42,30 +53,87 @@ export default function Sales() {
     }
   };
 
+  // Traer ventas completas cuando cambia el mes (modo “mes”)
   useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, search]);
+    if (!filterByMonth) return;
+    setLoading(true);
+    getAllSales()
+      .then((data) => setAllSales(Array.isArray(data) ? data : []))
+      .catch((e) => console.error("Error al obtener ventas (all):", e))
+      .finally(() => setLoading(false));
+  }, [filterByMonth]);
 
+  // Modo normal: re-fetch al cambiar page/pageSize/search si NO hay mes
+  useEffect(() => {
+    if (filterByMonth) return; // en modo mes no usamos paginado del back
+    fetchPaged();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, pageSize, search, filterByMonth]);
+
+  // Reset de página cuando cambio el mes
+  useEffect(() => {
+    setPage(1);
+  }, [month]);
+
+  // Helper moneda
+  const currency = (n) =>
+    typeof n === "number" && !Number.isNaN(n) ? `$${n.toFixed(2)}` : "-";
+
+  // Filtrado local cuando hay “month”
+  const { shownSales, shownTotal } = useMemo(() => {
+    if (!filterByMonth) {
+      return { shownSales: sales, shownTotal: totalItems };
+    }
+
+    // rangos del mes
+    const [y, m] = month.split("-").map(Number);           // YYYY, MM
+    const from = new Date(y, m - 1, 1, 0, 0, 0, 0);
+    const to = new Date(y, m, 0, 23, 59, 59, 999);         // último día del mes
+
+    // filtrar por fecha y por cliente (search)
+    const filtered = (allSales || []).filter((v) => {
+      const fecha = v?.fecha ? new Date(v.fecha) : null;
+      if (!fecha) return false;
+      const inMonth = fecha >= from && fecha <= to;
+      const matchesSearch = search
+        ? String(v?.cliente || "").toLowerCase().includes(search.toLowerCase())
+        : true;
+      return inMonth && matchesSearch;
+    });
+
+    // paginar localmente
+    const start = (page - 1) * pageSize;
+    const pageItems = filtered.slice(start, start + pageSize);
+    return { shownSales: pageItems, shownTotal: filtered.length };
+  }, [filterByMonth, allSales, sales, totalItems, month, page, pageSize, search]);
+
+  // Info de paginación
+  const pagInfo = useMemo(() => {
+    const total = Number(shownTotal ?? 0);
+    if (!total) return "0 de 0";
+    const from = (page - 1) * pageSize + 1;
+    const to = Math.min(page * pageSize, total);
+    return `${from}-${to} de ${total}`;
+  }, [page, pageSize, shownTotal]);
+
+  // Eliminar
   const handleDelete = async (ventaId) => {
     if (!confirm("¿Estás seguro de eliminar esta venta?")) return;
     try {
       await deleteSale(ventaId);
-      // si borrás el último de la página, retrocede una
-      if (sales.length === 1 && page > 1) setPage(p => p - 1);
-      else fetchData();
+      if (filterByMonth) {
+        // En modo mes, recargo todo y el filtrado se aplica solo
+        const data = await getAllSales();
+        setAllSales(Array.isArray(data) ? data : []);
+      } else {
+        // si borrás el último de la página, retrocede una
+        if (shownSales.length === 1 && page > 1) setPage((p) => p - 1);
+        else fetchPaged();
+      }
     } catch (e) {
       console.error("Error al eliminar venta:", e);
     }
   };
-
-  const currency = (n) => (typeof n === "number" ? `$${n.toFixed(2)}` : "-");
-
-  const pagInfo = useMemo(() => {
-    const from = totalItems ? (page - 1) * pageSize + 1 : 0;
-    const to = Math.min(page * pageSize, totalItems);
-    return totalItems ? `${from}-${to} de ${totalItems}` : "0 de 0";
-  }, [page, pageSize, totalItems]);
 
   return (
     <div className="body-bg" style={{ padding: 24 }}>
@@ -78,15 +146,44 @@ export default function Sales() {
         <Link to="/ventas/nueva" className="add-product-btn">+ Nueva Venta</Link>
       </div>
 
-      {/* Barra superior: buscador + page size */}
+      {/* Barra superior: buscador + mes + page size */}
       <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
         <input
           type="text"
           placeholder="Buscar por cliente..."
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
-          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", width: "100%", maxWidth: 360 }}
+          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", width: 260 }}
         />
+
+        {/* Filtro por mes (YYYY-MM) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <label style={{ fontSize: 14, color: "#555" }}>Mes</label>
+          <input
+            type="month"
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            style={{ padding: "8px", borderRadius: 6, border: "1px solid #ccc" }}
+          />
+          {month && (
+            <button
+              type="button"
+              onClick={() => setMonth("")}
+              style={{
+                padding: "8px 10px",
+                borderRadius: 6,
+                border: "1px solid #ddd",
+                background: "#fff",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+              title="Quitar filtro de mes"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           <span style={{ fontSize: 14, color: "#555" }}>Filas por página</span>
           <select
@@ -97,16 +194,18 @@ export default function Sales() {
             }}
             style={{ padding: "8px", borderRadius: 6, border: "1px solid #ccc", width: 80 }}
           >
-            {[5, 10, 20, 50].map(s => <option key={s} value={s}>{s}</option>)}
+            {[5, 10, 20, 50].map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
           </select>
         </div>
       </div>
 
+      {/* Tabla */}
       <div className="products-table-container">
         <table className="products-table">
           <thead>
             <tr>
-              
               <th>Fecha</th>
               <th>Cliente</th>
               <th>Precio Total (USD)</th>
@@ -120,13 +219,12 @@ export default function Sales() {
 
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} style={{ textAlign: "center", padding: 18 }}>Cargando...</td></tr>
-            ) : sales.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: "center", padding: 18 }}>Sin ventas registradas</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: "center", padding: 18 }}>Cargando...</td></tr>
+            ) : shownSales.length === 0 ? (
+              <tr><td colSpan={8} style={{ textAlign: "center", padding: 18 }}>Sin ventas</td></tr>
             ) : (
-              sales.map((venta, idx) => (
+              shownSales.map((venta, idx) => (
                 <tr key={venta.idVenta || `${page}-${idx}`}>
-                  
                   <td>{venta?.fecha ? new Date(venta.fecha).toLocaleDateString() : "-"}</td>
                   <td>{venta?.cliente || "-"}</td>
                   <td>{currency(Number(venta?.precioTotal ?? 0))}</td>
@@ -151,13 +249,13 @@ export default function Sales() {
         </table>
       </div>
 
-      {/* Info + Pagination */}
+      {/* Info + Paginación */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
-        
+        <span style={{ fontSize: 14, color: "#555" }}>{pagInfo}</span>
         <Pagination
           page={page}
           pageSize={pageSize}
-          total={totalItems}
+          total={shownTotal}
           onPageChange={(p) => setPage(p)}
         />
       </div>
