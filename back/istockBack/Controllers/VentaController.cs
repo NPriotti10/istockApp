@@ -42,6 +42,39 @@ public class VentasController : ControllerBase
         _context = context;
     }
 
+    // ====== Zona horaria/UTC helpers ======
+    private static readonly string[] BsAsTzIds = new[]
+    {
+        "America/Argentina/Buenos_Aires",   // Linux
+        "Argentina Standard Time"           // Windows
+    };
+
+    private static TimeZoneInfo GetBsAsTz()
+    {
+        foreach (var id in BsAsTzIds)
+        {
+            try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+            catch { /* sigue intentando */ }
+        }
+        return TimeZoneInfo.Local;
+    }
+
+    private static DateTime ToUtc(DateTime? incoming)
+    {
+        // Si no vino nada, ahora en UTC
+        if (incoming is null) return DateTime.UtcNow;
+
+        var dt = incoming.Value;
+        // Si viene sin Kind (ej: datetime-local del front), asumir local y convertir a UTC
+        if (dt.Kind == DateTimeKind.Unspecified)
+            return DateTime.SpecifyKind(dt, DateTimeKind.Local).ToUniversalTime();
+
+        return dt.ToUniversalTime();
+    }
+
+    private static DateTime LocalToUtc(DateTime local, TimeZoneInfo tz) =>
+        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(local, DateTimeKind.Unspecified), tz);
+
     // GET: api/ventas/paged?page=1&pageSize=10&search=juan
     [HttpGet("paged")]
     public async Task<ActionResult<PagedResult<VentaListaDto>>> GetVentasPaged(
@@ -93,14 +126,16 @@ public class VentasController : ControllerBase
         return Ok(result);
     }
 
-    // GET: api/ventas
+    // GET: api/ventas (completo, ordenado desc)
     [HttpGet]
     public async Task<ActionResult<IEnumerable<object>>> GetVentas()
     {
         var ventas = await _context.Venta
             .AsNoTracking()
             .Include(v => v.ItemVenta)
-            .ThenInclude(iv => iv.Producto) // fallback para nombre si no hay snapshot
+                .ThenInclude(iv => iv.Producto)
+                    .ThenInclude(p => p!.Categoria)
+            .OrderByDescending(v => v.Fecha)
             .ToListAsync();
 
         var resultado = ventas.Select(v => new
@@ -113,12 +148,17 @@ public class VentasController : ControllerBase
             v.GananciaTotal,
             v.EquipoPartePago,
             v.ValorDolar,
-            Productos = (v.ItemVenta ?? new List<ItemVenta>()).Select(iv => new
+            Productos = v.ItemVenta.Select(iv => new
             {
                 iv.IdProducto,
+                // Nombre via snapshot, fallback al vivo, luego placeholder
                 NombreProducto = !string.IsNullOrWhiteSpace(iv.NombreProducto)
                                     ? iv.NombreProducto
                                     : (iv.Producto?.Nombre ?? "(producto eliminado)"),
+                // Categoría via snapshot con fallback al vivo
+                CategoriaNombre = !string.IsNullOrWhiteSpace(iv.CategoriaNombre)
+                                    ? iv.CategoriaNombre
+                                    : (iv.Producto?.Categoria?.Nombre ?? null),
                 iv.Cantidad,
                 iv.NumeroSerie,
                 iv.PrecioUnitario,
@@ -137,11 +177,11 @@ public class VentasController : ControllerBase
         var venta = await _context.Venta
             .AsNoTracking()
             .Include(v => v.ItemVenta)
-                .ThenInclude(iv => iv.Producto) // fallback para nombre si no hay snapshot
+                .ThenInclude(iv => iv.Producto)
+                    .ThenInclude(p => p!.Categoria)
             .FirstOrDefaultAsync(v => v.IdVenta == id);
 
-        if (venta == null)
-            return NotFound();
+        if (venta == null) return NotFound();
 
         var resultado = new
         {
@@ -153,12 +193,15 @@ public class VentasController : ControllerBase
             venta.GananciaTotal,
             venta.EquipoPartePago,
             venta.ValorDolar,
-            Productos = (venta.ItemVenta ?? new List<ItemVenta>()).Select(iv => new
+            Productos = venta.ItemVenta.Select(iv => new
             {
                 iv.IdProducto,
                 NombreProducto = !string.IsNullOrWhiteSpace(iv.NombreProducto)
                                     ? iv.NombreProducto
                                     : (iv.Producto?.Nombre ?? "(producto eliminado)"),
+                CategoriaNombre = !string.IsNullOrWhiteSpace(iv.CategoriaNombre)
+                                    ? iv.CategoriaNombre
+                                    : (iv.Producto?.Categoria?.Nombre ?? null),
                 iv.Cantidad,
                 iv.NumeroSerie,
                 iv.PrecioUnitario,
@@ -192,11 +235,13 @@ public class VentasController : ControllerBase
         decimal total = 0m;
         decimal ganancia = 0m;
 
+        var usadosAEliminar = new List<int>();
+
         var nuevaVenta = new Venta
         {
             Cliente = ventaDto.Cliente,
             FormaPago = ventaDto.FormaPago,
-            Fecha = ventaDto.Fecha ?? DateTime.Now,
+            Fecha = ToUtc(ventaDto.Fecha), // ✅ guardar UTC
             ValorDolar = valorDolar,
             EquipoPartePago = ventaDto.EquipoPartePago ?? "",
             ItemVenta = new List<ItemVenta>()
@@ -214,12 +259,11 @@ public class VentasController : ControllerBase
 
             var nombreCat = (producto.Categoria?.Nombre ?? "").Trim().ToLowerInvariant();
             var esAccesorio = nombreCat == "accesorios" || nombreCat == "accesorio";
+            var esUsado = nombreCat == "usado" || nombreCat == "usados";
 
-            // Precios fuente (USD por defecto; ARS si es accesorio)
             var precioVenta = producto.PrecioVenta;
             var precioCosto = producto.PrecioCosto;
 
-            // Convertir a USD si corresponde
             var precioUnitarioUSD = esAccesorio
                 ? decimal.Round(precioVenta / valorDolar, 2)
                 : decimal.Round(precioVenta, 2);
@@ -231,7 +275,6 @@ public class VentasController : ControllerBase
             var subtotalUSD = decimal.Round(precioUnitarioUSD * cantidad, 2);
             var gananciaItemUSD = decimal.Round((precioUnitarioUSD - costoUSD) * cantidad, 2);
 
-            // Agregar item con snapshots
             nuevaVenta.ItemVenta.Add(new ItemVenta
             {
                 IdProducto = producto.IdProducto,
@@ -254,6 +297,10 @@ public class VentasController : ControllerBase
 
             // Descontar stock
             producto.StockActual -= cantidad;
+
+            // Usados: si quedó sin stock, marcar para eliminar
+            if (esUsado && producto.StockActual <= 0)
+                usadosAEliminar.Add(producto.IdProducto);
         }
 
         nuevaVenta.PrecioTotal = decimal.Round(total, 2);
@@ -261,6 +308,21 @@ public class VentasController : ControllerBase
 
         _context.Venta.Add(nuevaVenta);
         await _context.SaveChangesAsync();
+
+        // Usados: eliminar del inventario (si falla FK, se ignora y queda en 0)
+        if (usadosAEliminar.Count > 0)
+        {
+            var aBorrar = await _context.Productos
+                .Where(p => usadosAEliminar.Contains(p.IdProducto))
+                .ToListAsync();
+            try
+            {
+                _context.Productos.RemoveRange(aBorrar);
+                await _context.SaveChangesAsync();
+            }
+            catch { /* dejar stock 0 */ }
+        }
+
         await tx.CommitAsync();
 
         return Ok(new
@@ -287,28 +349,26 @@ public class VentasController : ControllerBase
         if (venta == null)
             return NotFound("Venta no encontrada.");
 
-        // 1) Restaurar stock de los ítems actuales
+        // restaurar stock
         foreach (var old in venta.ItemVenta)
         {
-            var prod = await _context.Productos.FindAsync(old.IdProducto);
-            if (prod != null) prod.StockActual += old.Cantidad;
+            var prodRestore = await _context.Productos.FindAsync(old.IdProducto);
+            if (prodRestore != null) prodRestore.StockActual += old.Cantidad;
         }
 
-        // 2) Eliminar ítems actuales
         _context.ItemVenta.RemoveRange(venta.ItemVenta);
         await _context.SaveChangesAsync();
 
-        // 3) Actualizar cabecera
-        var valorDolar = dto.ValorDolar > 0 ? dto.ValorDolar : (venta.ValorDolar > 0 ? venta.ValorDolar : 1m);
+        var valorDolar = dto.ValorDolar > 0 ? dto.ValorDolar : venta.ValorDolar > 0 ? venta.ValorDolar : 1m;
         venta.Cliente = dto.Cliente;
         venta.FormaPago = dto.FormaPago;
         venta.EquipoPartePago = dto.EquipoPartePago;
         venta.ValorDolar = valorDolar;
-        venta.Fecha = dto.Fecha ?? venta.Fecha;
+        venta.Fecha = ToUtc(dto.Fecha ?? venta.Fecha); // ✅ UTC
 
-        // 4) Agregar nuevos ítems + validar stock + calcular totales + snapshots
         decimal total = 0m, ganancia = 0m;
         venta.ItemVenta = new List<ItemVenta>();
+        var usadosAEliminar = new List<int>();
 
         if (dto.Items != null && dto.Items.Any())
         {
@@ -334,6 +394,7 @@ public class VentasController : ControllerBase
 
                 var nombreCat = (prod.Categoria?.Nombre ?? "").Trim().ToLowerInvariant();
                 var esAcc = nombreCat == "accesorios" || nombreCat == "accesorio";
+                var esUsado = nombreCat == "usado" || nombreCat == "usados";
 
                 var precioUnit = esAcc
                     ? decimal.Round(prod.PrecioVenta / valorDolar, 2)
@@ -364,6 +425,9 @@ public class VentasController : ControllerBase
 
                 total += subtotal;
                 ganancia += utilidad;
+
+                if (esUsado && prod.StockActual <= 0)
+                    usadosAEliminar.Add(prod.IdProducto);
             }
         }
 
@@ -371,6 +435,21 @@ public class VentasController : ControllerBase
         venta.GananciaTotal = decimal.Round(ganancia, 2);
 
         await _context.SaveChangesAsync();
+
+        if (usadosAEliminar.Count > 0)
+        {
+            var aBorrar = await _context.Productos
+                .Where(p => usadosAEliminar.Contains(p.IdProducto))
+                .ToListAsync();
+
+            try
+            {
+                _context.Productos.RemoveRange(aBorrar);
+                await _context.SaveChangesAsync();
+            }
+            catch { /* dejar en stock 0 si hay FK */ }
+        }
+
         await tx.CommitAsync();
 
         return Ok(new { mensaje = "Venta actualizada correctamente.", total = venta.PrecioTotal, ganancia = venta.GananciaTotal });
@@ -387,7 +466,6 @@ public class VentasController : ControllerBase
         if (venta == null)
             return NotFound("Venta no encontrada.");
 
-        // Devolver el stock de los productos antes de eliminar
         foreach (var item in venta.ItemVenta)
         {
             var producto = await _context.Productos.FindAsync(item.IdProducto);
@@ -405,23 +483,41 @@ public class VentasController : ControllerBase
         return Ok(new { mensaje = "Venta eliminada correctamente." });
     }
 
+    // Helper: determina si es accesorio (snapshot + fallback)
+    private static bool EsAccesorio(ItemVenta iv)
+    {
+        var nombre = (iv.CategoriaNombre ?? iv.Producto?.Categoria?.Nombre ?? "")
+            .Trim()
+            .ToLowerInvariant();
+        return nombre == "accesorio" || nombre == "accesorios";
+    }
+
+    // GET: api/ventas/estadisticas
     [HttpGet("estadisticas")]
     public async Task<IActionResult> ObtenerEstadisticas()
     {
-        var hoy = DateTime.Today;
-        var inicioMes = new DateTime(hoy.Year, hoy.Month, 1);
-        var inicioSemana = hoy.AddDays(-(int)hoy.DayOfWeek + 1); // lunes
+        var tz = GetBsAsTz();
 
-        // Traemos ventas con ítems y (fallback) producto->categoría
-        var ventasFull = await _context.Venta
+        // "Ahora" en hora local BA, y límites de semana/mes locales
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+        int diff = ((int)nowLocal.DayOfWeek + 6) % 7; // lunes = inicio
+        var inicioSemanaLocal = nowLocal.Date.AddDays(-diff);
+        var inicioMesLocal = new DateTime(nowLocal.Year, nowLocal.Month, 1);
+
+        // Convertir límites locales a UTC para comparar contra Fecha (guardada en UTC)
+        var inicioSemanaUtc = LocalToUtc(inicioSemanaLocal, tz);
+        var inicioMesUtc = LocalToUtc(inicioMesLocal, tz);
+
+        // Solo ventas del mes actual (sirve para semana también)
+        var ventasMes = await _context.Venta
             .AsNoTracking()
+            .Where(v => v.Fecha >= inicioMesUtc)
             .Include(v => v.ItemVenta)
                 .ThenInclude(iv => iv.Producto)
-                    .ThenInclude(p => p.Categoria)
+                    .ThenInclude(p => p!.Categoria)
             .ToListAsync();
 
-        // Función local a prueba de nulos para detectar accesorios
-        bool EsAccesorio(ItemVenta iv)
+        bool EsAccesorioLocal(ItemVenta iv)
         {
             var nombreCat = (iv.CategoriaNombre
                              ?? iv.Producto?.Categoria?.Nombre
@@ -433,63 +529,66 @@ public class VentasController : ControllerBase
 
         decimal SumarGananciaUSDExclAcc(IEnumerable<Venta> vv) =>
             vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
-                .Where(iv => !EsAccesorio(iv))
+                .Where(iv => !EsAccesorioLocal(iv))
                 .Sum(iv => iv.Ganancia));
 
         decimal SumarGananciaARSExclAcc(IEnumerable<Venta> vv) =>
             vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
-                .Where(iv => !EsAccesorio(iv))
+                .Where(iv => !EsAccesorioLocal(iv))
                 .Sum(iv => iv.Ganancia * v.ValorDolar));
 
         decimal SumarGananciaAccesoriosARS(IEnumerable<Venta> vv) =>
             vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
-                .Where(iv => EsAccesorio(iv))
+                .Where(iv => EsAccesorioLocal(iv))
                 .Sum(iv => iv.Ganancia * v.ValorDolar));
 
-        // Subconjuntos para cálculo
-        var ventasSem = ventasFull.Where(v => v.Fecha >= inicioSemana).ToList();
-        var ventasMen = ventasFull.Where(v => v.Fecha >= inicioMes).ToList();
+        var ventasSemanalesRaw = ventasMes.Where(v => v.Fecha >= inicioSemanaUtc).ToList();
+        var ventasMensualesRaw = ventasMes;
 
-        // DTOs livianos para evitar ciclos (el front usa .length)
-        var ventasSemanales = ventasSem.Select(v => new { v.IdVenta, v.Fecha }).ToList();
-        var ventasMensuales = ventasMen.Select(v => new { v.IdVenta, v.Fecha }).ToList();
-
-        // Gastos fijos (USD) a prueba de vacío
-        var totalGastosFijos = (await _context.GastoFijo
-            .AsNoTracking()
+        // SUM seguro si tabla está vacía
+        var totalGastosFijos = await _context.GastoFijo
             .Select(g => (decimal?)g.Monto)
-            .SumAsync()) ?? 0m;
+            .SumAsync() ?? 0m;
 
-        // Cálculos
-        var gananciaSemanalUSD = SumarGananciaUSDExclAcc(ventasSem);
-        var gananciaSemanalARS = SumarGananciaARSExclAcc(ventasSem);
-        var gananciaSemanalAccesoriosARS = SumarGananciaAccesoriosARS(ventasSem);
+        var gananciaSemanalUSD = SumarGananciaUSDExclAcc(ventasSemanalesRaw);
+        var gananciaSemanalARS = SumarGananciaARSExclAcc(ventasSemanalesRaw);
+        var gananciaSemanalAccesoriosARS = SumarGananciaAccesoriosARS(ventasSemanalesRaw);
 
-        var gananciaMensualUSD = SumarGananciaUSDExclAcc(ventasMen);
-        var gananciaMensualARS = SumarGananciaARSExclAcc(ventasMen);
-        var gananciaMensualAccesoriosARS = SumarGananciaAccesoriosARS(ventasMen);
+        var gananciaMensualUSD = SumarGananciaUSDExclAcc(ventasMensualesRaw);
+        var gananciaMensualARS = SumarGananciaARSExclAcc(ventasMensualesRaw);
+        var gananciaMensualAccesoriosARS = SumarGananciaAccesoriosARS(ventasMensualesRaw);
 
-        // Neta: solo NO accesorios en USD - gastos
         var gananciaMensualUSDNeta = gananciaMensualUSD - totalGastosFijos;
+
+        // Mapear a DTO y ordenar por fecha desc
+        List<VentaListaDto> VentasToDto(IEnumerable<Venta> src) =>
+            src.OrderByDescending(v => v.Fecha)
+               .Select(v => new VentaListaDto
+               {
+                   IdVenta = v.IdVenta,
+                   Fecha = v.Fecha,
+                   Cliente = v.Cliente,
+                   PrecioTotal = v.PrecioTotal,
+                   GananciaTotal = v.GananciaTotal,
+                   ValorDolar = v.ValorDolar,
+                   EquipoPartePago = v.EquipoPartePago
+               })
+               .ToList();
+
+        var ventasSemanales = VentasToDto(ventasSemanalesRaw);
+        var ventasMensuales = VentasToDto(ventasMensualesRaw);
 
         return Ok(new
         {
             ventasSemanales,
             ventasMensuales,
-
-            // Totales NO accesorios
             gananciaSemanalUSD = Math.Round(gananciaSemanalUSD, 2),
             gananciaSemanalARS = Math.Round(gananciaSemanalARS, 2),
             gananciaMensualUSD = Math.Round(gananciaMensualUSD, 2),
             gananciaMensualARS = Math.Round(gananciaMensualARS, 2),
-
-            // Accesorios (ARS)
             gananciaSemanalAccesoriosARS = Math.Round(gananciaSemanalAccesoriosARS, 2),
             gananciaMensualAccesoriosARS = Math.Round(gananciaMensualAccesoriosARS, 2),
-
-            // Neta (USD, sin accesorios)
             gananciaMensualUSDNeta = Math.Round(gananciaMensualUSDNeta, 2),
-
             totalGastosFijos = Math.Round(totalGastosFijos, 2)
         });
     }
@@ -498,10 +597,9 @@ public class VentasController : ControllerBase
     public async Task<IActionResult> GetProductosBajoStock()
     {
         var productos = await _context.Productos
-            .AsNoTracking()
             .Where(p => p.StockActual <= p.StockMinimo)
             .ToListAsync();
 
-        return Ok(productos); // lista simple
+        return Ok(productos);
     }
 }

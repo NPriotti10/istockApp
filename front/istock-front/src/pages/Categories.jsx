@@ -118,7 +118,7 @@ export default function Categories() {
         <table className="products-table">
           <thead>
             <tr>
-              <th style={{ width: 120 }}>ID</th>
+              
               <th>Nombre</th>
               <th style={{ width: 220 }}>Acciones</th>
             </tr>
@@ -132,7 +132,7 @@ export default function Categories() {
             ) : (
               cats.map((cat) => (
                 <tr key={cat.idCategoria}>
-                  <td>{cat.idCategoria}</td>
+                  
                   <td>
                     {editId === cat.idCategoria ? (
                       <input

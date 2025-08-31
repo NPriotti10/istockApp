@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { getSalesPaged, getAllSales, deleteSale } from "../services/sales";
 import { Link } from "react-router-dom";
 import Pagination from "../components/Pagination";
+import { moneyUSD, moneyARS } from "../utils/format"; // 👈 helpers de formato
 
 export default function Sales() {
   const [sales, setSales] = useState([]);          // lista paginada (modo normal)
@@ -23,6 +24,17 @@ export default function Sales() {
   // Modo “mes”: si hay mes seleccionado, se filtra localmente
   const filterByMonth = Boolean(month);
 
+  // helpers de fecha/hora y orden
+  const ts = (v) => (v?.fecha ? new Date(v.fecha).getTime() : 0);
+  const sortByFechaDesc = (a, b) => ts(b) - ts(a);
+  const fmtDateTime = (s) =>
+    s
+      ? new Date(s).toLocaleString(undefined, {
+          dateStyle: "short",
+          timeStyle: "short",
+        })
+      : "-";
+
   // debounce buscador (300ms)
   useEffect(() => {
     const t = setTimeout(() => {
@@ -39,12 +51,15 @@ export default function Sales() {
       const res = await getSalesPaged({ page, pageSize, search });
       if (Array.isArray(res)) {
         // fallback por si el back devolviera array
+        const sorted = [...res].sort(sortByFechaDesc);
         const start = (page - 1) * pageSize;
-        setSales(res.slice(start, start + pageSize));
+        setSales(sorted.slice(start, start + pageSize));
         setTotalItems(res.length);
       } else {
-        setSales(res.items || []);
-        setTotalItems(res.totalItems || 0);
+        const items = Array.isArray(res.items) ? res.items : [];
+        const sorted = [...items].sort(sortByFechaDesc);
+        setSales(sorted);
+        setTotalItems(res.totalItems || items.length || 0);
       }
     } catch (e) {
       console.error("Error al obtener ventas:", e);
@@ -75,20 +90,18 @@ export default function Sales() {
     setPage(1);
   }, [month]);
 
-  // Helper moneda
-  const currency = (n) =>
-    typeof n === "number" && !Number.isNaN(n) ? `$${n.toFixed(2)}` : "-";
-
   // Filtrado local cuando hay “month”
   const { shownSales, shownTotal } = useMemo(() => {
     if (!filterByMonth) {
-      return { shownSales: sales, shownTotal: totalItems };
+      // por las dudas re-ordenamos acá también
+      const sorted = [...sales].sort(sortByFechaDesc);
+      return { shownSales: sorted, shownTotal: totalItems };
     }
 
     // rangos del mes
-    const [y, m] = month.split("-").map(Number);           // YYYY, MM
+    const [y, m] = month.split("-").map(Number); // YYYY, MM
     const from = new Date(y, m - 1, 1, 0, 0, 0, 0);
-    const to = new Date(y, m, 0, 23, 59, 59, 999);         // último día del mes
+    const to = new Date(y, m, 0, 23, 59, 59, 999); // último día del mes
 
     // filtrar por fecha y por cliente (search)
     const filtered = (allSales || []).filter((v) => {
@@ -101,9 +114,12 @@ export default function Sales() {
       return inMonth && matchesSearch;
     });
 
+    // ordenar desc por fecha antes de paginar
+    const sorted = filtered.sort(sortByFechaDesc);
+
     // paginar localmente
     const start = (page - 1) * pageSize;
-    const pageItems = filtered.slice(start, start + pageSize);
+    const pageItems = sorted.slice(start, start + pageSize);
     return { shownSales: pageItems, shownTotal: filtered.length };
   }, [filterByMonth, allSales, sales, totalItems, month, page, pageSize, search]);
 
@@ -223,27 +239,29 @@ export default function Sales() {
             ) : shownSales.length === 0 ? (
               <tr><td colSpan={8} style={{ textAlign: "center", padding: 18 }}>Sin ventas</td></tr>
             ) : (
-              shownSales.map((venta, idx) => (
-                <tr key={venta.idVenta || `${page}-${idx}`}>
-                  <td>{venta?.fecha ? new Date(venta.fecha).toLocaleDateString() : "-"}</td>
-                  <td>{venta?.cliente || "-"}</td>
-                  <td>{currency(Number(venta?.precioTotal ?? 0))}</td>
-                  <td>{currency(Number(venta?.gananciaTotal ?? 0))}</td>
-                  <td>
-                    {venta?.valorDolar && venta?.gananciaTotal
-                      ? currency(Number(venta.valorDolar) * Number(venta.gananciaTotal))
-                      : "-"}
-                  </td>
-                  <td>{venta?.equipoPartePago || "-"}</td>
-                  <td>
-                    <Link to={`/ventas/detalle/${venta.idVenta}`} className="action-btn">Ver detalle</Link>
-                  </td>
-                  <td>
-                    <Link to={`/ventas/editar/${venta.idVenta}`} className="action-btn edit">Editar</Link>
-                    <button className="action-btn delete" onClick={() => handleDelete(venta.idVenta)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))
+              shownSales.map((venta, idx) => {
+                const totalUSD = Number(venta?.precioTotal ?? 0);
+                const gainUSD = Number(venta?.gananciaTotal ?? 0);
+                const gainARS = (Number(venta?.valorDolar ?? 0) * gainUSD) || 0;
+
+                return (
+                  <tr key={venta.idVenta || `${page}-${idx}`}>
+                    <td>{fmtDateTime(venta?.fecha)}</td>
+                    <td>{venta?.cliente || "-"}</td>
+                    <td>{moneyUSD(totalUSD)}</td>
+                    <td>{moneyUSD(gainUSD)}</td>
+                    <td>{moneyARS(gainARS)}</td>
+                    <td>{venta?.equipoPartePago || "-"}</td>
+                    <td>
+                      <Link to={`/ventas/detalle/${venta.idVenta}`} className="action-btn">Ver detalle</Link>
+                    </td>
+                    <td>
+                      <Link to={`/ventas/editar/${venta.idVenta}`} className="action-btn edit">Editar</Link>
+                      <button className="action-btn delete" onClick={() => handleDelete(venta.idVenta)}>Eliminar</button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

@@ -624,6 +624,18 @@
         }
       }
     },
+    "/healthz": {
+      "get": {
+        "tags": [
+          "istockBack"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Productos/bycode/{code}": {
       "get": {
         "tags": [

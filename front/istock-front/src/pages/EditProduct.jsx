@@ -1,5 +1,5 @@
 // src/pages/EditProduct.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getProductById, updateProduct } from "../services/products";
 import { getAllCategorias } from "../services/categorias";
@@ -21,8 +21,23 @@ export default function EditProduct() {
     stockActual: "",
     stockMinimo: "",
     idCategoria: "",
-    codigoBarra: "",        // ⬅️ nuevo campo
+    codigoBarra: "",
   });
+
+  // helper: detectar si la categoría seleccionada es "usado(s)"
+  const isUsadoById = (catId) => {
+    const cat = categorias.find(
+      (c) => Number(c.idCategoria) === Number(catId)
+    );
+    if (!cat) return false;
+    const n = (cat.nombre || "").trim().toLowerCase();
+    return n === "usado" || n === "usados";
+  };
+
+  const isUsado = useMemo(
+    () => isUsadoById(form.idCategoria),
+    [form.idCategoria, categorias]
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -45,7 +60,7 @@ export default function EditProduct() {
           stockActual: prod?.stockActual ?? 0,
           stockMinimo: prod?.stockMinimo ?? 0,
           idCategoria: prod?.idCategoria ?? "",
-          codigoBarra: prod?.codigoBarra ?? "",   // ⬅️ set inicial
+          codigoBarra: prod?.codigoBarra ?? "",
         });
       } catch (e) {
         console.error(e);
@@ -56,16 +71,38 @@ export default function EditProduct() {
     }
 
     load();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [id]);
+
+  // Si la categoría es "usado(s)", forzar stockMinimo=0 y stockActual=1
+  useEffect(() => {
+    if (!categorias.length) return;
+    if (isUsado) {
+      setForm((prev) => ({
+        ...prev,
+        stockMinimo: 0,
+        stockActual: 1,
+      }));
+    }
+  }, [isUsado, categorias]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const numericFields = [
+      "precioCosto",
+      "precioVenta",
+      "stockActual",
+      "stockMinimo",
+      "idCategoria",
+    ];
 
-    // numeros: convertir a Number
-    const numericFields = ["precioCosto", "precioVenta", "stockActual", "stockMinimo", "idCategoria"];
     if (numericFields.includes(name)) {
-      setForm((prev) => ({ ...prev, [name]: value === "" ? "" : Number(value) }));
+      setForm((prev) => ({
+        ...prev,
+        [name]: value === "" ? "" : Number(value),
+      }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
@@ -77,16 +114,14 @@ export default function EditProduct() {
     setSaving(true);
 
     try {
-      // payload final
       const payload = {
         ...form,
-        // asegurar números
         precioCosto: Number(form.precioCosto),
         precioVenta: Number(form.precioVenta),
         stockActual: Number(form.stockActual),
         stockMinimo: Number(form.stockMinimo),
         idCategoria: Number(form.idCategoria),
-        codigoBarra: String(form.codigoBarra || "").trim(), // ⬅️ incluir
+        codigoBarra: String(form.codigoBarra || "").trim(),
       };
 
       await updateProduct(id, payload);
@@ -100,13 +135,9 @@ export default function EditProduct() {
     }
   };
 
-  // ====== estilos simples y consistentes ======
+  // ====== estilos ======
   const styles = {
-    wrap: {
-      padding: 24,
-      display: "grid",
-      placeItems: "center",
-    },
+    wrap: { padding: 24, display: "grid", placeItems: "center" },
     card: {
       width: "100%",
       maxWidth: 720,
@@ -116,7 +147,8 @@ export default function EditProduct() {
       boxShadow: "0 6px 18px rgba(0,0,0,.06)",
       padding: 20,
     },
-    title: { margin: "6px 0 14px", fontSize: 22, fontWeight: 800 },
+    title: { margin: "6px 0 4px", fontSize: 22, fontWeight: 800 },
+    hint: { marginBottom: 12, color: "#64748b", fontSize: 13 },
     grid: {
       display: "grid",
       gap: 12,
@@ -132,8 +164,12 @@ export default function EditProduct() {
       fontSize: 14,
     },
     full: { gridColumn: "1 / -1" },
+    note: { fontSize: 12, color: "#6b7280" },
     actions: {
-      display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14,
+      display: "flex",
+      justifyContent: "flex-end",
+      gap: 10,
+      marginTop: 14,
     },
     btn: {
       padding: "10px 14px",
@@ -142,7 +178,11 @@ export default function EditProduct() {
       cursor: "pointer",
       fontWeight: 700,
     },
-    btnGhost: { background: "transparent", color: "#374151", border: "1px solid #d1d5db" },
+    btnGhost: {
+      background: "transparent",
+      color: "#374151",
+      border: "1px solid #d1d5db",
+    },
     btnPrimary: { background: "#2563eb", color: "#fff" },
     error: { color: "#dc2626", marginBottom: 8, fontSize: 14 },
   };
@@ -153,6 +193,12 @@ export default function EditProduct() {
     <div style={styles.wrap}>
       <form onSubmit={handleSubmit} style={styles.card}>
         <h2 style={styles.title}>Editar producto</h2>
+        <div style={styles.hint}>
+          {isUsado
+            ? "Categoría USADO: el stock es único (1) y el mínimo queda en 0."
+            : "Completá los datos del producto y guardá los cambios."}
+        </div>
+
         {err && <div style={styles.error}>{err}</div>}
 
         <div style={styles.grid}>
@@ -168,7 +214,7 @@ export default function EditProduct() {
             />
           </div>
 
-          {/* Código de barras (nuevo) */}
+          {/* Código de barras */}
           <div style={styles.group}>
             <label style={styles.label}>Código de barras</label>
             <input
@@ -177,7 +223,6 @@ export default function EditProduct() {
               onChange={handleChange}
               style={styles.input}
               placeholder="Escaneá o escribí el código"
-              // El lector USB actúa como teclado, así que simplemente focalizar este input permite escanear.
             />
           </div>
 
@@ -222,7 +267,9 @@ export default function EditProduct() {
 
           {/* Stock actual */}
           <div style={styles.group}>
-            <label style={styles.label}>Stock actual</label>
+            <label style={styles.label}>
+              Stock actual {isUsado && <span style={styles.note}>(fijado en 1)</span>}
+            </label>
             <input
               type="number"
               name="stockActual"
@@ -231,12 +278,15 @@ export default function EditProduct() {
               style={styles.input}
               min="0"
               required
+              disabled={isUsado}
             />
           </div>
 
           {/* Stock mínimo */}
           <div style={styles.group}>
-            <label style={styles.label}>Stock mínimo</label>
+            <label style={styles.label}>
+              Stock mínimo {isUsado && <span style={styles.note}>(fijado en 0)</span>}
+            </label>
             <input
               type="number"
               name="stockMinimo"
@@ -245,6 +295,7 @@ export default function EditProduct() {
               style={styles.input}
               min="0"
               required
+              disabled={isUsado}
             />
           </div>
 

@@ -5,6 +5,7 @@ import { getDolarValue } from "../services/dolar";
 import { getAllCategorias } from "../services/categorias";
 import { getProductsPaged, deleteProduct, getInventoryInvestment } from "../services/products";
 import Pagination from "../components/Pagination";
+import { moneyUSD, moneyARS } from "../utils/format"; // 👈 helper de formato
 
 const USD_OVERRIDE_KEY = "usd_override_v1";
 
@@ -29,14 +30,11 @@ export default function Products() {
   // Inversión total (costo * stock)
   const [inv, setInv] = useState({ totalCostoUSD: 0, totalCostoARS: 0 });
 
-  // Utilidad moneda
-  const currency = (n) =>
-    typeof n === "number" && !Number.isNaN(n) ? `$${n.toFixed(2)}` : "-";
-
-  // Helper: ¿es accesorio?
-  const esAccesorio = (prod) =>
-    (prod?.categoria?.nombre || "").trim().toLowerCase() === "accesorio" ||
-    (prod?.categoria?.nombre || "").trim().toLowerCase() === "accesorios";
+  // ¿es accesorio?
+  const esAccesorio = (prod) => {
+    const n = (prod?.categoria?.nombre || "").trim().toLowerCase();
+    return n === "accesorio" || n === "accesorios";
+  };
 
   // Cargar dólar y categorías una vez
   useEffect(() => {
@@ -63,7 +61,7 @@ export default function Products() {
           setNuevoDolar(v);
         }
       })
-      .catch(() => { /* opcional: toast */ });
+      .catch(() => {});
 
     getAllCategorias().then(setCategorias).catch(() => alert("Error al obtener categorías"));
   }, []);
@@ -71,7 +69,7 @@ export default function Products() {
   // Debounce buscador (300ms)
   useEffect(() => {
     const t = setTimeout(() => {
-      setData((prev) => ({ ...prev, page: 1 })); // reset a página 1
+      setData((prev) => ({ ...prev, page: 1 }));
       setSearchTerm(typed.trim());
     }, 300);
     return () => clearTimeout(t);
@@ -87,7 +85,7 @@ export default function Products() {
         search: searchTerm,
         categoriaId: selectedCategory ? Number(selectedCategory) : null,
       });
-      setData(res); // { items, total, page, pageSize }
+      setData(res);
     } catch (err) {
       console.error("Error al obtener productos:", err);
     } finally {
@@ -107,20 +105,16 @@ export default function Products() {
     if (!v || v <= 0) return;
     getInventoryInvestment(v)
       .then((res) => setInv(res || { totalCostoUSD: 0, totalCostoARS: 0 }))
-      .catch(() => {
-        // si falla, lo dejamos en 0 sin romper la UI
-        setInv({ totalCostoUSD: 0, totalCostoARS: 0 });
-      });
+      .catch(() => setInv({ totalCostoUSD: 0, totalCostoARS: 0 }));
   }, [dolar]);
 
-  // Eliminar y recargar la página actual
+  // Eliminar y recargar
   async function handleDelete(idProducto) {
     if (!confirm("¿Estás seguro de eliminar este producto?")) return;
     try {
       await deleteProduct(idProducto);
       const isLastItemOnPage = data.items.length === 1 && data.page > 1;
       load(isLastItemOnPage ? data.page - 1 : data.page);
-      // refrescamos inversión tras eliminar
       const v = Number(dolar) || 1;
       getInventoryInvestment(v).then(setInv).catch(() => {});
     } catch (err) {
@@ -165,7 +159,7 @@ export default function Products() {
     }
   }
 
-  // Info de paginación estilo "x-y de total"
+  // Info de paginación
   const pagInfo = useMemo(() => {
     const total = Number(data.total ?? 0);
     if (!total) return "0 de 0";
@@ -178,7 +172,7 @@ export default function Products() {
 
   return (
     <div className="body-bg" style={{ padding: 24 }}>
-      {/* Dólar actual + actualizar (override local) */}
+      {/* Dólar actual + actualizar */}
       <form
         onSubmit={handleActualizarDolar}
         style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}
@@ -244,8 +238,8 @@ export default function Products() {
         gap: 16,
         flexWrap: "wrap"
       }}>
-        <div><strong>Inversión total (USD):</strong> {currency(Number(inv.totalCostoUSD || 0))}</div>
-        <div><strong>Inversión total (ARS):</strong> {currency(Number(inv.totalCostoARS || 0))}</div>
+        <div><strong>Inversión total (USD):</strong> {moneyUSD(Number(inv.totalCostoUSD || 0))}</div>
+        <div><strong>Inversión total (ARS):</strong> {moneyARS(Number(inv.totalCostoARS || 0))}</div>
       </div>
 
       {/* Encabezado */}
@@ -328,8 +322,8 @@ export default function Products() {
                 const venta = Number(prod.precioVenta ?? 0);
 
                 // Regla: accesorios almacenan precios en ARS
-                const ventaUSD = acc ? (venta / usd) : venta;
-                const ventaARS = acc ? venta : (venta * usd);
+                const ventaUSDNum = acc ? (venta / usd) : venta;
+                const ventaARSNum = acc ? venta : (venta * usd);
 
                 return (
                   <tr key={prod.idProducto ?? idx}>
@@ -338,15 +332,12 @@ export default function Products() {
                     <td>{prod.categoria?.nombre}</td>
                     <td>{prod.stockActual}</td>
 
-                    {/* Precio costo con sufijo de moneda */}
-                    <td>
-                      {currency(costo)}{" "}
-                      <small style={{ color: "#6b7280" }}>{acc ? "ARS" : "USD"}</small>
-                    </td>
+                    {/* Costo formateado según moneda */}
+                    <td>{acc ? moneyARS(costo) : moneyUSD(costo)}</td>
 
                     {/* Ventas en USD/ARS respetando la regla de Accesorios */}
-                    <td>{currency(ventaUSD)}</td>
-                    <td>{currency(ventaARS)}</td>
+                    <td>{moneyUSD(ventaUSDNum)}</td>
+                    <td>{moneyARS(ventaARSNum)}</td>
 
                     <td>
                       <Link to={`/productos/editar/${prod.idProducto}`} className="action-btn edit">Editar</Link>

@@ -29,6 +29,7 @@ import Categories from "../pages/Categories";
 export default function AppRoutes() {
   return (
     <Routes>
+      
       {/* Pública */}
       <Route path="/login" element={<Login />} />
 

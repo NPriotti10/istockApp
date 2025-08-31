@@ -1,27 +1,47 @@
 using istockBack.Models;
 using istockBack.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS para el front (Vite)
+// ===== CORS (configurable) =====
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? new[] { "http://localhost:5173" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy => policy
-        .WithOrigins("http://localhost:5173") // ajustá si cambia
+        .WithOrigins(allowedOrigins)
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials());
 });
 
-// MVC + Swagger
-builder.Services.AddControllers();
+// ===== Controllers / JSON =====
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        // Opcional: timestamps ISO8601 con 'Z' si el DateTime es UTC
+        // (ya guardás UTC en los controladores)
+    });
+
 builder.Services.AddEndpointsApiExplorer();
+
+// ===== Swagger sólo en Dev =====
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "iStock API", Version = "v1" });
@@ -39,31 +59,30 @@ builder.Services.AddSwaggerGen(c =>
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             Array.Empty<string>()
         }
     });
 });
 
-// Hosted services (los que ya tenías)
+// ===== Hosted services (los tuyos) =====
 builder.Services.AddHostedService<VentaBackupService>();
 builder.Services.AddHostedService<VentaBackupMensualService>();
 
-// DbContext
+// ===== DbContext =====
 builder.Services.AddDbContext<IstockDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("CadenaSQL"));
 });
 
-// JWT (permite passphrase corta derivando a 32 bytes con SHA-256)
+// ===== JWT (clave derivada a 32 bytes) =====
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         var cfg = builder.Configuration;
-        var passphrase = cfg["Jwt:Key"] ?? throw new InvalidOperationException("Falta Jwt:Key en appsettings.json");
-        var keyBytes = SHA256.HashData(Encoding.UTF8.GetBytes(passphrase)); // clave fuerte desde tu passphrase
+        var passphrase = cfg["Jwt:Key"] ?? throw new InvalidOperationException("Falta Jwt:Key en appsettings.");
+        var keyBytes = SHA256.HashData(Encoding.UTF8.GetBytes(passphrase));
 
         options.TokenValidationParameters = new()
         {
@@ -79,23 +98,51 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// Token service (usar SIEMPRE la interfaz)
+// ===== Token service =====
 builder.Services.AddScoped<ITokenService, TokenService>();
+
+// ===== Compresión =====
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<GzipCompressionProviderOptions>(o =>
+{
+    o.Level = CompressionLevel.Fastest;
+});
 
 var app = builder.Build();
 
-// Swagger (dejalo siempre o sólo en Dev, como prefieras)
+// ===== Swagger en Dev =====
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    // HSTS sólo prod
+    app.UseHsts();
+}
+
+// ===== Proxy headers (App Service / reverse proxy) =====
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 app.UseCors("AllowFrontend");
+
 app.UseHttpsRedirection();
 
-app.UseAuthentication();   // ? importante: antes de Authorization
+app.UseResponseCompression();
+
+app.UseAuthentication(); // antes de Authorization
 app.UseAuthorization();
+
+// Healthcheck simple
+app.MapGet("/healthz", () => Results.Ok(new { ok = true }));
 
 app.MapControllers();
 

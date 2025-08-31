@@ -1,13 +1,12 @@
-// src/pages/AddSale.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getProductsPaged } from "../services/products";
 import { createSale } from "../services/sales";
 import { getDolarValue } from "../services/dolar";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function AddSale() {
-  const [productos, setProductos] = useState([]); // { idProducto, nombre, stockActual, precioCosto, precioVenta, categoria?, codigoBarra? }
-  const [items, setItems] = useState([]);         // { idProducto, cantidad, numeroSerie }
+  const [productos, setProductos] = useState([]);
+  const [items, setItems] = useState([]);
   const [cliente, setCliente] = useState("");
   const [formaPago, setFormaPago] = useState("");
   const [valorDolar, setValorDolar] = useState("");
@@ -17,8 +16,9 @@ export default function AddSale() {
   const [saving, setSaving] = useState(false);
 
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
 
-  // ===== lector de códigos =====
+  // ===== lector de códigos (local de esta pantalla) =====
   const [scannerEnabled, setScannerEnabled] = useState(true);
   const bufferRef = useRef("");
   const lastKeyTimeRef = useRef(0);
@@ -38,7 +38,7 @@ export default function AddSale() {
       });
   }, []);
 
-  // Mapa por id (performance)
+  // Mapa por id
   const mapById = useMemo(() => {
     const m = {};
     for (const p of productos) m[p.idProducto] = p;
@@ -56,7 +56,40 @@ export default function AddSale() {
     return m;
   }, [productos]);
 
-  // Helpers del escáner
+  // ======= Integración con el escáner global =======
+  // 4.a) Si venimos con ?code= en la URL, agregarlo automáticamente
+  useEffect(() => {
+    if (!productos.length) return;
+    const qCode = normalize(params.get("code"));
+    if (!qCode) return;
+
+    const prod = mapByBarcode[qCode];
+    if (prod) {
+      handleAddItemFromScan(prod);
+      // limpiar el parámetro de la URL para que no se reaplique
+      params.delete("code");
+      setParams(params, { replace: true });
+    } else {
+      alert(`Código no encontrado: ${qCode}`);
+      params.delete("code");
+      setParams(params, { replace: true });
+    }
+  }, [productos, params, setParams]); // mapByBarcode deriva de productos
+
+  // 4.b) Si ya estamos aquí y el scanner global dispara, agregar
+  useEffect(() => {
+    const onGlobalScan = (e) => {
+      const code = normalize(e.detail?.code);
+      if (!code) return;
+      const prod = mapByBarcode[code];
+      if (prod) handleAddItemFromScan(prod);
+      else alert(`Código no encontrado: ${code}`);
+    };
+    window.addEventListener("global-scan", onGlobalScan);
+    return () => window.removeEventListener("global-scan", onGlobalScan);
+  }, [mapByBarcode]);
+
+  // ===== helpers del lector local (atajos de teclado) =====
   const isTypingInInput = () => {
     const el = document.activeElement;
     if (!el) return false;
@@ -76,30 +109,11 @@ export default function AddSale() {
       console.warn(`Código ${raw} no encontrado`);
       return;
     }
-
-    setItems((prev) => {
-      const idx = prev.findIndex((it) => Number(it.idProducto) === Number(prod.idProducto));
-      if (idx !== -1) {
-        const copia = [...prev];
-        const nuevaCant = copia[idx].cantidad + 1;
-        if (nuevaCant > (prod.stockActual ?? 0)) {
-          alert(`Stock insuficiente para ${prod.nombre}. Disponible: ${prod.stockActual}`);
-          return prev;
-        }
-        copia[idx] = { ...copia[idx], cantidad: nuevaCant };
-        return copia;
-      }
-      if ((prod.stockActual ?? 0) < 1) {
-        alert(`Sin stock para ${prod.nombre}`);
-        return prev;
-      }
-      return [...prev, { idProducto: prod.idProducto, cantidad: 1, numeroSerie: "" }];
-    });
+    handleAddItemFromScan(prod);
   };
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      // F9: activar/desactivar escáner
       if (e.key === "F9") {
         setScannerEnabled((s) => !s);
         return;
@@ -133,7 +147,7 @@ export default function AddSale() {
   }, [scannerEnabled, mapByBarcode]);
 
   // ===================== lógica de items =====================
-  const handleAddItemFromSearch = (producto) => {
+  const handleAddItemFromScan = (producto) => {
     setItems((prev) => {
       const idx = prev.findIndex((it) => Number(it.idProducto) === Number(producto.idProducto));
       if (idx !== -1) {
@@ -152,6 +166,10 @@ export default function AddSale() {
       }
       return [...prev, { idProducto: producto.idProducto, cantidad: 1, numeroSerie: "" }];
     });
+  };
+
+  const handleAddItemFromSearch = (producto) => {
+    handleAddItemFromScan(producto);
     setBusqueda("");
   };
 
@@ -177,7 +195,7 @@ export default function AddSale() {
       return copy;
     });
 
-  // Cálculo totales/ganancia ALINEADO CON EL BACK (Accesorios en ARS → USD)
+  // Cálculo totales/ganancia (alineado con back)
   const calcularTotalYGanancia = () => {
     let total = 0;
     let ganancia = 0;
@@ -211,7 +229,7 @@ export default function AddSale() {
     for (const it of items) {
       const prod = mapById[it.idProducto];
       if (!prod) continue;
-      
+
       if (it.cantidad > (prod.stockActual ?? 0)) {
         alert(`Stock insuficiente para "${prod.nombre}". Disponible: ${prod.stockActual}`);
         return false;
@@ -235,7 +253,7 @@ export default function AddSale() {
       items: items.map(({ idProducto, cantidad, numeroSerie }) => ({
         idProducto: Number(idProducto),
         cantidad: Number(cantidad),
-        numeroSerie: (String(numeroSerie || "").trim() || null) , 
+        numeroSerie: (String(numeroSerie || "").trim() || null),
       })),
     };
 
@@ -259,7 +277,7 @@ export default function AddSale() {
     return productos.filter((p) => (p.nombre || "").toLowerCase().includes(q));
   }, [productos, busqueda]);
 
-  // ===== estilos =====
+  // ===== estilos (igual que antes) =====
   const styles = {
     container: {
       padding: 24,
@@ -330,7 +348,7 @@ export default function AddSale() {
               background: scannerEnabled ? "#16a34a" : "#e11d48",
             }}
           />
-          Lector: <strong>{scannerEnabled ? "ACTIVO" : "INACTIVO"}</strong> (F9 para alternar)
+          Lector local: <strong>{scannerEnabled ? "ACTIVO" : "INACTIVO"}</strong> (F9 para alternar)
         </div>
         <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14 }}>
           <input
@@ -338,7 +356,7 @@ export default function AddSale() {
             checked={scannerEnabled}
             onChange={(e) => setScannerEnabled(e.target.checked)}
           />
-          Usar lector de códigos
+          Usar lector local (esta pantalla)
         </label>
       </div>
 

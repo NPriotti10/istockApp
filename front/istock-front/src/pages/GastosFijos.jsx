@@ -4,27 +4,28 @@ import {
   getGastosFijos,
   addGastoFijo,
   deleteGastoFijo,
-  // updateGastoFijo, // por si después agregás edición
 } from "../services/gastosFijos";
+import { moneyUSD } from "../utils/format";
 
 export default function GastosFijos() {
   const [gastos, setGastos] = useState([]);
   const [nombre, setNombre] = useState("");
   const [monto, setMonto] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loadingList, setLoadingList] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
   async function load() {
-    setLoading(true);
+    setLoadingList(true);
     setErr("");
     try {
-      const data = await getGastosFijos(); // ✅ usa el servicio con axios + Bearer
+      const data = await getGastosFijos();
       setGastos(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("❌ Error al obtener gastos:", e);
-      setErr("Error al obtener gastos");
+      setErr("No se pudieron cargar los gastos.");
     } finally {
-      setLoading(false);
+      setLoadingList(false);
     }
   }
 
@@ -32,26 +33,30 @@ export default function GastosFijos() {
     load();
   }, []);
 
+  const total = useMemo(
+    () => gastos.reduce((acc, g) => acc + Number(g.monto ?? g.Monto ?? 0), 0),
+    [gastos]
+  );
+
+  const canSubmit =
+    nombre.trim() && !Number.isNaN(Number(monto)) && Number(monto) > 0;
+
   const handleSubmit = async (e) => {
     e?.preventDefault();
+    if (!canSubmit || saving) return;
+
+    setSaving(true);
     setErr("");
-
-    const nombreOk = nombre.trim();
-    const montoNum = Number(monto);
-
-    if (!nombreOk || Number.isNaN(montoNum)) {
-      setErr("Nombre y monto son obligatorios.");
-      return;
-    }
-
     try {
-      await addGastoFijo({ nombre: nombreOk, monto: montoNum });
+      await addGastoFijo({ nombre: nombre.trim(), monto: Number(monto) });
       setNombre("");
       setMonto("");
       await load();
     } catch (e) {
       console.error("❌ Error al agregar gasto:", e);
-      setErr("Error al agregar gasto");
+      setErr("No se pudo agregar el gasto.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -62,130 +67,165 @@ export default function GastosFijos() {
       await load();
     } catch (e) {
       console.error("❌ Error al eliminar gasto:", e);
-      setErr("Error al eliminar gasto");
+      setErr("No se pudo eliminar el gasto.");
     }
   };
 
-  const total = useMemo(
-    () => gastos.reduce((acc, g) => acc + Number(g.monto ?? 0), 0),
-    [gastos]
-  );
-
-  const currency = (n) =>
-    Number.isFinite(n) ? `$${n.toFixed(2)}` : "$0.00";
-
-  const styles = {
-    container: { display: "flex", justifyContent: "center", padding: "2rem" },
-    box: {
-      backgroundColor: "#f9f9f9",
-      padding: "2rem",
-      borderRadius: "12px",
-      maxWidth: "600px",
-      width: "100%",
-      boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-    },
-    title: { textAlign: "center", fontSize: "1.8rem", marginBottom: "1.5rem", color: "#333" },
-    subtitle: { fontSize: "1.2rem", color: "#666" },
-    form: { display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" },
-    formGroup: { display: "flex", flexDirection: "column" },
-    label: { fontWeight: 600, marginBottom: 4 },
-    input: { padding: 8, border: "1px solid #ccc", borderRadius: 6, fontSize: "1rem" },
-    button: {
-      alignSelf: "flex-start",
-      backgroundColor: "#007bff",
-      color: "#fff",
-      padding: "0.5rem 1.2rem",
-      border: "none",
-      borderRadius: 6,
-      cursor: "pointer",
-      fontWeight: "bold",
-    },
-    list: { listStyle: "none", padding: 0, margin: 0 },
-    item: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: "0.6rem 0",
-      borderBottom: "1px solid #ddd",
-    },
-    texto: { fontSize: "1rem", color: "#333" },
-    monto: { fontWeight: "bold", color: "#28a745" },
-    eliminar: { background: "none", border: "none", color: "#dc3545", cursor: "pointer", fontWeight: "bold", fontSize: "0.9rem" },
-    total: { marginTop: "1.5rem", textAlign: "right", fontSize: "1.1rem", fontWeight: "bold", color: "#333" },
-    totalMonto: { color: "#007bff" },
-    sinGastos: { textAlign: "center", color: "#666", fontStyle: "italic" },
-    error: { color: "#dc3545", marginBottom: 10, fontWeight: 600 },
+  // estilos mínimos coherentes con el resto
+  const input = {
+    padding: 8,
+    border: "1px solid #ccc",
+    borderRadius: 6,
+    height: 38,
   };
+  const label = { display: "flex", flexDirection: "column", gap: 6 };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.box}>
-        <h2 style={styles.title}>
-          💸 Gastos Mensuales <span style={styles.subtitle}>(USD)</span>
-        </h2>
+    <div className="body-bg" style={{ padding: 24 }}>
+      {/* Encabezado solo con el título */}
+      <div
+        className="products-header"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 12,
+        }}
+      >
+        <h1 className="products-title">GASTOS MENSUALES</h1>
+      </div>
 
-        {err && <div style={styles.error}>{err}</div>}
+      {/* Form debajo del título */}
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: "flex",
+          alignItems: "end",
+          gap: 8,
+          flexWrap: "wrap",
+          marginBottom: 12,
+        }}
+      >
+        <div style={label}>
+          <small style={{ color: "#555" }}>Gasto</small>
+          <input
+            style={{ ...input, minWidth: 220 }}
+            value={nombre}
+            placeholder="Ej: Alquiler"
+            onChange={(e) => setNombre(e.target.value)}
+            autoComplete="off"
+          />
+        </div>
 
-        <form style={styles.form} onSubmit={handleSubmit}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Gasto</label>
-            <input
-              style={styles.input}
-              value={nombre}
-              placeholder="Ej: Alquiler"
-              onChange={(e) => setNombre(e.target.value)}
-              autoComplete="off"
-            />
-          </div>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Monto ($)</label>
-            <input
-              style={styles.input}
-              value={monto}
-              placeholder="Ej: 100"
-              type="number"
-              step="0.01"
-              onChange={(e) => setMonto(e.target.value)}
-            />
-          </div>
-          <button style={styles.button} type="submit" disabled={loading}>
-            {loading ? "Guardando..." : "➕ Agregar"}
-          </button>
-        </form>
+        <div style={label}>
+          <small style={{ color: "#555" }}>Monto (USD)</small>
+          <input
+            style={{ ...input, width: 140 }}
+            value={monto}
+            placeholder="Ej: 120"
+            type="number"
+            step="0.01"
+            min="0"
+            onChange={(e) => setMonto(e.target.value)}
+          />
+        </div>
 
-        {loading ? (
-          <p style={styles.sinGastos}>Cargando…</p>
-        ) : gastos.length === 0 ? (
-          <p style={styles.sinGastos}>No hay gastos fijos registrados.</p>
-        ) : (
-          <>
-            <ul style={styles.list}>
-              {gastos.map((g) => {
-                const id = g.id ?? g.idGastoFijo ?? g.Id ?? g.IdGastoFijo; // soporta varias keys
+        <button
+          type="submit"
+          disabled={!canSubmit || saving}
+          className="add-product-btn"
+          style={{
+            height: 38,
+            opacity: !canSubmit || saving ? 0.7 : 1,
+            cursor: !canSubmit || saving ? "not-allowed" : "pointer",
+          }}
+          title="Agregar gasto"
+        >
+          {saving ? "Guardando…" : "➕ Agregar"}
+        </button>
+      </form>
+
+      {/* Error (si existe) */}
+      {err ? (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: "8px 10px",
+            borderRadius: 8,
+            background: "#FEF2F2",
+            color: "#991B1B",
+            border: "1px solid #FECACA",
+            fontSize: 14,
+          }}
+        >
+          {err}
+        </div>
+      ) : null}
+
+      {/* Tabla */}
+      <div className="products-table-container">
+        <table className="products-table">
+          <thead>
+            <tr>
+              <th style={{ width: "70%" }}>Gasto</th>
+              <th style={{ width: "20%" }}>Monto (USD)</th>
+              <th style={{ width: "10%" }}>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loadingList ? (
+              <tr>
+                <td colSpan={3} style={{ textAlign: "center", padding: 18 }}>
+                  Cargando…
+                </td>
+              </tr>
+            ) : gastos.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={3}
+                  style={{ textAlign: "center", padding: 18, color: "#6b7280" }}
+                >
+                  No hay gastos mensuales registrados.
+                </td>
+              </tr>
+            ) : (
+              gastos.map((g, idx) => {
+                const id = g.id ?? g.idGastoFijo ?? g.Id ?? g.IdGastoFijo;
+                const nombreG = g.nombre ?? g.Nombre ?? "-";
                 const montoN = Number(g.monto ?? g.Monto ?? 0);
                 return (
-                  <li key={id} style={styles.item}>
-                    <span style={styles.texto}>
-                      {g.nombre ?? g.Nombre}:{" "}
-                      <span style={styles.monto}>{currency(montoN)}</span>
-                    </span>
-                    <button
-                      style={styles.eliminar}
-                      onClick={() => handleEliminar(id)}
-                      title="Eliminar"
-                    >
-                      🗑️ Eliminar
-                    </button>
-                  </li>
+                  <tr key={id ?? idx}>
+                    <td>{nombreG}</td>
+                    <td>{moneyUSD(montoN)}</td>
+                    <td>
+                      <button
+                        className="action-btn delete"
+                        onClick={() => handleEliminar(id)}
+                        title="Eliminar"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
                 );
-              })}
-            </ul>
+              })
+            )}
+          </tbody>
 
-            <div style={styles.total}>
-              Total mensual: <span style={styles.totalMonto}>{currency(total)} USD</span>
-            </div>
-          </>
-        )}
+          {/* Total mensual en el footer de la tabla */}
+          {!loadingList && gastos.length > 0 && (
+            <tfoot>
+              <tr>
+                <td style={{ textAlign: "right", fontWeight: 700 }}>
+                  Total mensual
+                </td>
+                <td style={{ fontWeight: 700 }}>{moneyUSD(total)}</td>
+                <td />
+              </tr>
+            </tfoot>
+          )}
+        </table>
       </div>
     </div>
   );
