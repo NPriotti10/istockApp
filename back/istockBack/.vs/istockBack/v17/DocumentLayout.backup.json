@@ -50,8 +50,7 @@
               "RelativeToolTip": "Program.cs",
               "ViewState": "AgIAADIAAAAAAAAAAAAgwJUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-31T16:49:49.502Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-08-31T16:49:49.502Z"
             },
             {
               "$type": "Document",
@@ -63,8 +62,7 @@
               "RelativeToolTip": "appsettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2025-08-29T22:35:56.623Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-08-29T22:35:56.623Z"
             },
             {
               "$type": "Document",
@@ -76,8 +74,7 @@
               "RelativeToolTip": "Migrations\\20250824195932_ItemVentaSnapshots_SetNullFK.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-08-24T19:59:33.357Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-08-24T19:59:33.357Z"
             },
             {
               "$type": "Document",
@@ -109,8 +106,8 @@
               "Title": "VentaController.cs",
               "DocumentMoniker": "C:\\Proyects\\istockApp\\back\\istockBack\\Controllers\\VentaController.cs",
               "RelativeDocumentMoniker": "Controllers\\VentaController.cs",
-              "ToolTip": "C:\\Proyects\\istockApp\\back\\istockBack\\Controllers\\VentaController.cs*",
-              "RelativeToolTip": "Controllers\\VentaController.cs*",
+              "ToolTip": "C:\\Proyects\\istockApp\\back\\istockBack\\Controllers\\VentaController.cs",
+              "RelativeToolTip": "Controllers\\VentaController.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAqwAsAAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-08-22T13:52:03.379Z",

@@ -1,24 +1,39 @@
+// src/pages/AddSale.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getProductsPaged } from "../services/products";
 import { createSale } from "../services/sales";
 import { getDolarValue } from "../services/dolar";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function AddSale() {
-  const [productos, setProductos] = useState([]);
-  const [items, setItems] = useState([]);
+  const [productos, setProductos] = useState([]); // { idProducto, nombre, stockActual, precioCosto, precioVenta, categoria?, codigoBarra? }
+  const [items, setItems] = useState([]);         // { idProducto, cantidad, numeroSerie }
   const [cliente, setCliente] = useState("");
   const [formaPago, setFormaPago] = useState("");
   const [valorDolar, setValorDolar] = useState("");
   const [equipoPartePago, setEquipoPartePago] = useState("");
-  const [fecha, setFecha] = useState(() => new Date().toISOString().split("T")[0]);
+
+  // 🔹 ahora guardamos fecha y HORA locales en el input "datetime-local"
+  const nowLocalForInput = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const y = d.getFullYear();
+    const m = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const h = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    const sec = pad(d.getSeconds());
+    // incluir segundos (step=1 en el input) para máxima precisión
+    return `${y}-${m}-${day}T${h}:${min}:${sec}`;
+  };
+  const [fechaHora, setFechaHora] = useState(nowLocalForInput());
+
   const [busqueda, setBusqueda] = useState("");
   const [saving, setSaving] = useState(false);
 
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
 
-  // ===== lector de códigos (local de esta pantalla) =====
+  // ===== lector de códigos =====
   const [scannerEnabled, setScannerEnabled] = useState(true);
   const bufferRef = useRef("");
   const lastKeyTimeRef = useRef(0);
@@ -38,7 +53,7 @@ export default function AddSale() {
       });
   }, []);
 
-  // Mapa por id
+  // Mapa por id (performance)
   const mapById = useMemo(() => {
     const m = {};
     for (const p of productos) m[p.idProducto] = p;
@@ -56,40 +71,7 @@ export default function AddSale() {
     return m;
   }, [productos]);
 
-  // ======= Integración con el escáner global =======
-  // 4.a) Si venimos con ?code= en la URL, agregarlo automáticamente
-  useEffect(() => {
-    if (!productos.length) return;
-    const qCode = normalize(params.get("code"));
-    if (!qCode) return;
-
-    const prod = mapByBarcode[qCode];
-    if (prod) {
-      handleAddItemFromScan(prod);
-      // limpiar el parámetro de la URL para que no se reaplique
-      params.delete("code");
-      setParams(params, { replace: true });
-    } else {
-      alert(`Código no encontrado: ${qCode}`);
-      params.delete("code");
-      setParams(params, { replace: true });
-    }
-  }, [productos, params, setParams]); // mapByBarcode deriva de productos
-
-  // 4.b) Si ya estamos aquí y el scanner global dispara, agregar
-  useEffect(() => {
-    const onGlobalScan = (e) => {
-      const code = normalize(e.detail?.code);
-      if (!code) return;
-      const prod = mapByBarcode[code];
-      if (prod) handleAddItemFromScan(prod);
-      else alert(`Código no encontrado: ${code}`);
-    };
-    window.addEventListener("global-scan", onGlobalScan);
-    return () => window.removeEventListener("global-scan", onGlobalScan);
-  }, [mapByBarcode]);
-
-  // ===== helpers del lector local (atajos de teclado) =====
+  // Helpers del escáner
   const isTypingInInput = () => {
     const el = document.activeElement;
     if (!el) return false;
@@ -109,11 +91,30 @@ export default function AddSale() {
       console.warn(`Código ${raw} no encontrado`);
       return;
     }
-    handleAddItemFromScan(prod);
+
+    setItems((prev) => {
+      const idx = prev.findIndex((it) => Number(it.idProducto) === Number(prod.idProducto));
+      if (idx !== -1) {
+        const copia = [...prev];
+        const nuevaCant = copia[idx].cantidad + 1;
+        if (nuevaCant > (prod.stockActual ?? 0)) {
+          alert(`Stock insuficiente para ${prod.nombre}. Disponible: ${prod.stockActual}`);
+          return prev;
+        }
+        copia[idx] = { ...copia[idx], cantidad: nuevaCant };
+        return copia;
+      }
+      if ((prod.stockActual ?? 0) < 1) {
+        alert(`Sin stock para ${prod.nombre}`);
+        return prev;
+      }
+      return [...prev, { idProducto: prod.idProducto, cantidad: 1, numeroSerie: "" }];
+    });
   };
 
   useEffect(() => {
     const onKeyDown = (e) => {
+      // F9: activar/desactivar escáner
       if (e.key === "F9") {
         setScannerEnabled((s) => !s);
         return;
@@ -147,7 +148,7 @@ export default function AddSale() {
   }, [scannerEnabled, mapByBarcode]);
 
   // ===================== lógica de items =====================
-  const handleAddItemFromScan = (producto) => {
+  const handleAddItemFromSearch = (producto) => {
     setItems((prev) => {
       const idx = prev.findIndex((it) => Number(it.idProducto) === Number(producto.idProducto));
       if (idx !== -1) {
@@ -166,11 +167,8 @@ export default function AddSale() {
       }
       return [...prev, { idProducto: producto.idProducto, cantidad: 1, numeroSerie: "" }];
     });
-  };
-
-  const handleAddItemFromSearch = (producto) => {
-    handleAddItemFromScan(producto);
     setBusqueda("");
+    setActiveIndex(0);
   };
 
   const handleChangeCantidad = (index, value) => {
@@ -195,7 +193,12 @@ export default function AddSale() {
       return copy;
     });
 
-  // Cálculo totales/ganancia (alineado con back)
+  // Cálculo totales/ganancia ALINEADO CON EL BACK (Accesorios en ARS → USD)
+  const moneyUSD = (n) =>
+    typeof n === "number" && !Number.isNaN(n)
+      ? `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : "-";
+
   const calcularTotalYGanancia = () => {
     let total = 0;
     let ganancia = 0;
@@ -244,8 +247,10 @@ export default function AddSale() {
     if (!validar()) return;
     if (!confirm("¿Estás seguro de guardar esta venta?")) return;
 
+    // ⚠️ Enviamos la fecha con HORA tal como sale del input datetime-local (YYYY-MM-DDTHH:mm[:ss])
+    // El binder de ASP.NET la toma como DateTime local (Kind=Unspecified) con esa hora.
     const venta = {
-      fecha,
+      fecha: fechaHora,
       cliente,
       formaPago,
       valorDolar: Number(valorDolar),
@@ -272,12 +277,40 @@ export default function AddSale() {
 
   const { total, ganancia, totalARS } = calcularTotalYGanancia();
 
+  // ===== Buscador mejorado =====
   const productosFiltrados = useMemo(() => {
     const q = busqueda.toLowerCase();
-    return productos.filter((p) => (p.nombre || "").toLowerCase().includes(q));
+    const list = productos.filter((p) => (p.nombre || "").toLowerCase().includes(q));
+    // pequeño orden: primero con stock, luego alfabético
+    return list.sort((a, b) => {
+      const sa = Number(a.stockActual ?? 0);
+      const sb = Number(b.stockActual ?? 0);
+      if (sa > 0 && sb <= 0) return -1;
+      if (sa <= 0 && sb > 0) return 1;
+      return (a.nombre || "").localeCompare(b.nombre || "");
+    });
   }, [productos, busqueda]);
 
-  // ===== estilos (igual que antes) =====
+  // navegación con teclado en el dropdown
+  const [activeIndex, setActiveIndex] = useState(0);
+  const onSearchKeyDown = (e) => {
+    if (!productosFiltrados.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => (i + 1) % productosFiltrados.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => (i - 1 + productosFiltrados.length) % productosFiltrados.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const item = productosFiltrados[activeIndex] || productosFiltrados[0];
+      if (item) handleAddItemFromSearch(item);
+    } else if (e.key === "Escape") {
+      setBusqueda("");
+    }
+  };
+
+  // ===== estilos =====
   const styles = {
     container: {
       padding: 24,
@@ -303,21 +336,41 @@ export default function AddSale() {
     },
     removeBtn: { background: "#dc3545" },
     dropdown: {
-      border: "1px solid #ccc",
-      borderRadius: 6,
-      maxHeight: 160,
+      border: "1px solid #d7deea",
+      borderRadius: 10,
+      maxHeight: 260,
       overflowY: "auto",
       backgroundColor: "#fff",
       position: "absolute",
       zIndex: 10,
       width: "100%",
-      boxShadow: "0 6px 18px rgba(0,0,0,.08)",
+      boxShadow: "0 12px 28px rgba(16,24,40,.12)",
+      marginTop: 6,
     },
     dropdownItem: {
-      padding: 8,
+      padding: 10,
       cursor: "pointer",
-      borderBottom: "1px solid #f0f0f0",
+      borderBottom: "1px solid #f1f5f9",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 8,
     },
+    chip: {
+      fontSize: 12,
+      padding: "3px 8px",
+      borderRadius: 999,
+      border: "1px solid #e5e7eb",
+      background: "#f8fafc",
+      color: "#0f172a",
+    },
+    stockDot: (ok) => ({
+      width: 8,
+      height: 8,
+      borderRadius: 999,
+      background: ok ? "#16a34a" : "#ef4444",
+      marginRight: 8,
+    }),
     cantidadInput: { width: 70, textAlign: "center", padding: 8, border: "1px solid #ccc", borderRadius: 6 },
     serialInput: { display: "block", marginTop: 8, padding: 8, border: "1px solid #ccc", borderRadius: 6, width: 280 },
     badge: {
@@ -348,7 +401,7 @@ export default function AddSale() {
               background: scannerEnabled ? "#16a34a" : "#e11d48",
             }}
           />
-          Lector local: <strong>{scannerEnabled ? "ACTIVO" : "INACTIVO"}</strong> (F9 para alternar)
+          Lector: <strong>{scannerEnabled ? "ACTIVO" : "INACTIVO"}</strong> (F9 para alternar)
         </div>
         <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14 }}>
           <input
@@ -356,15 +409,22 @@ export default function AddSale() {
             checked={scannerEnabled}
             onChange={(e) => setScannerEnabled(e.target.checked)}
           />
-          Usar lector local (esta pantalla)
+          Usar lector de códigos
         </label>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div style={styles.row}>
           <div style={styles.formGroup}>
-            <label style={styles.label}>Fecha</label>
-            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} style={styles.input} required />
+            <label style={styles.label}>Fecha y hora</label>
+            <input
+              type="datetime-local"
+              step="1"
+              value={fechaHora}
+              onChange={(e) => setFechaHora(e.target.value)}
+              style={styles.input}
+              required
+            />
           </div>
 
           <div style={styles.formGroup}>
@@ -418,28 +478,57 @@ export default function AddSale() {
 
         <h3>Productos</h3>
 
-        {/* buscador manual */}
+        {/* buscador manual (mejorado) */}
         <div style={{ position: "relative", marginBottom: 8 }}>
           <input
             type="text"
             placeholder="Buscar producto por nombre..."
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={(e) => {
+              setBusqueda(e.target.value);
+              setActiveIndex(0);
+            }}
+            onKeyDown={onSearchKeyDown}
             style={{ ...styles.input }}
           />
           {busqueda && (
             <div style={styles.dropdown}>
-              {productosFiltrados.map((p) => (
-                <div
-                  key={p.idProducto}
-                  style={styles.dropdownItem}
-                  onClick={() => handleAddItemFromSearch(p)}
-                >
-                  {p.nombre} &nbsp; <small>(Stock: {p.stockActual})</small>
-                </div>
-              ))}
+              {productosFiltrados.slice(0, 20).map((p, i) => {
+                const inStock = Number(p.stockActual ?? 0) > 0;
+                const usd = Number(valorDolar) || 1;
+                const isAcc = (p.categoria?.nombre || "").trim().toLowerCase() === "accesorio";
+                const ventaUSD = isAcc ? (Number(p.precioVenta ?? 0) / usd) : Number(p.precioVenta ?? 0);
+
+                return (
+                  <div
+                    key={p.idProducto}
+                    style={{
+                      ...styles.dropdownItem,
+                      background: i === activeIndex ? "#eef2ff" : "#fff",
+                    }}
+                    onMouseEnter={() => setActiveIndex(i)}
+                    onClick={() => handleAddItemFromSearch(p)}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={styles.stockDot(inStock)} />
+                      <div>
+                        <div style={{ fontWeight: 600, color: "#0f172a" }}>{p.nombre}</div>
+                        <small style={{ color: "#64748b" }}>
+                          {p.categoria?.nombre || "Sin categoría"}
+                          {" · "}Stock: {p.stockActual ?? 0}
+                        </small>
+                      </div>
+                    </div>
+                    <div>
+                      <span style={styles.chip}>
+                        {moneyUSD(ventaUSD)} {isAcc ? "USD* (precio en ARS)" : "USD"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
               {productosFiltrados.length === 0 && (
-                <div style={{ padding: 8, color: "#64748b" }}>Sin resultados…</div>
+                <div style={{ padding: 12, color: "#64748b" }}>Sin resultados…</div>
               )}
             </div>
           )}
@@ -488,9 +577,9 @@ export default function AddSale() {
 
         {/* totales */}
         <div style={{ marginTop: 16, lineHeight: 1.7 }}>
-          <strong>Total USD:</strong> ${total.toFixed(2)} <br />
-          <strong>Total ARS:</strong> ${totalARS.toFixed(2)} <br />
-          <strong>Ganancia:</strong> ${ganancia.toFixed(2)}
+          <strong>Total USD:</strong> {moneyUSD(total)} <br />
+          <strong>Total ARS:</strong> {moneyUSD(totalARS)} <br />
+          <strong>Ganancia:</strong> {moneyUSD(ganancia)}
         </div>
 
         <button
