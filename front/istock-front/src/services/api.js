@@ -1,7 +1,7 @@
 // src/services/api.js
 import axios from "axios";
 
-const BASE_URL = import.meta?.env?.VITE_API_URL || "https://istockapp.netlify.app/";
+const BASE_URL = import.meta?.env?.VITE_API_URL || "https://istockapp-api-gjhrfecvdvhhb4d3.brazilsouth-01.azurewebsites.net";
 
 // 👉 Cliente normal (agrega Bearer salvo /auth/*)
 const api = axios.create({
