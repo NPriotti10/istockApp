@@ -14,10 +14,14 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== CORS (configurable) =====
-var allowedOrigins = builder.Configuration
-    .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? new[] { "http://localhost:5173" };
+/* ==================== CORS ==================== */
+// Permite configurar como string en App Settings: Cors:AllowedOrigins = "https://istockapp.netlify.app;http://localhost:5173"
+var originsRaw = builder.Configuration["Cors:AllowedOrigins"];
+var allowedOrigins =
+    !string.IsNullOrWhiteSpace(originsRaw)
+        ? originsRaw.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        : (builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+           ?? new[] { "http://localhost:5173", "https://istockapp.netlify.app" });
 
 builder.Services.AddCors(options =>
 {
@@ -28,20 +32,18 @@ builder.Services.AddCors(options =>
         .AllowCredentials());
 });
 
-// ===== Controllers / JSON =====
+/* ============== Controllers / JSON ============== */
 builder.Services.AddControllers()
     .AddJsonOptions(o =>
     {
         o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        // Opcional: timestamps ISO8601 con 'Z' si el DateTime es UTC
-        // (ya guardás UTC en los controladores)
     });
 
 builder.Services.AddEndpointsApiExplorer();
 
-// ===== Swagger sólo en Dev =====
+/* =================== Swagger =================== */
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "iStock API", Version = "v1" });
@@ -66,17 +68,17 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ===== Hosted services (los tuyos) =====
+/* ============== Hosted services ============== */
 builder.Services.AddHostedService<VentaBackupService>();
 builder.Services.AddHostedService<VentaBackupMensualService>();
 
-// ===== DbContext =====
+/* ================== DbContext ================== */
 builder.Services.AddDbContext<IstockDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("CadenaSQL"));
 });
 
-// ===== JWT (clave derivada a 32 bytes) =====
+/* ====================== JWT ====================== */
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -98,10 +100,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// ===== Token service =====
+/* ================== Token service ================== */
 builder.Services.AddScoped<ITokenService, TokenService>();
 
-// ===== Compresión =====
+/* ================== Compresión ================== */
 builder.Services.AddResponseCompression(o =>
 {
     o.EnableForHttps = true;
@@ -114,36 +116,48 @@ builder.Services.Configure<GzipCompressionProviderOptions>(o =>
 
 var app = builder.Build();
 
-// ===== Swagger en Dev =====
-if (app.Environment.IsDevelopment())
+/* ===== Swagger controlado por config =====
+   En Azure poné App Setting: Swagger:Enabled = true (si querés exponerlo).
+   Por defecto: Dev = true, Prod = false. */
+var swaggerEnabled = builder.Configuration.GetValue("Swagger:Enabled", app.Environment.IsDevelopment());
+if (swaggerEnabled)
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "iStock API v1");
+        c.RoutePrefix = "swagger";
+    });
+    // Que la raíz no dé 404
+    app.MapGet("/", () => Results.Redirect("/swagger"));
 }
 else
 {
-    // HSTS sólo prod
-    app.UseHsts();
+    if (app.Environment.IsProduction()) app.UseHsts();
+    // Al menos algo útil en raíz si Swagger está off
+    app.MapGet("/", () => Results.Ok(new { ok = true, service = "iStock API" }));
 }
 
-// ===== Proxy headers (App Service / reverse proxy) =====
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+/* ============ Forwarded headers (Azure) ============ */
+var fwd = new ForwardedHeadersOptions
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    RequireHeaderSymmetry = false
+};
+// Aceptar cualquier proxy (App Service front-ends)
+fwd.KnownNetworks.Clear();
+fwd.KnownProxies.Clear();
+app.UseForwardedHeaders(fwd);
 
+/* ============ Middlewares ============ */
 app.UseCors("AllowFrontend");
-
 app.UseHttpsRedirection();
-
 app.UseResponseCompression();
-
-app.UseAuthentication(); // antes de Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
-// Healthcheck simple
+/* ============ Endpoints ============ */
 app.MapGet("/healthz", () => Results.Ok(new { ok = true }));
-
 app.MapControllers();
 
 app.Run();

@@ -358,7 +358,6 @@ C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\refint\istockBack.dll
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\istockBack.pdb
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\istockBack.genruntimeconfig.cache
 C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\ref\istockBack.dll
-C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Proyect\istockApp\back\istockBack\bin\Debug\net8.0\appsettings.Development.json
 C:\Proyect\istockApp\back\istockBack\bin\Debug\net8.0\appsettings.json
 C:\Proyect\istockApp\back\istockBack\bin\Debug\net8.0\istockBack.staticwebassets.endpoints.json
@@ -541,3 +540,4 @@ C:\Proyect\istockApp\back\istockBack\obj\Debug\net8.0\refint\istockBack.dll
 C:\Proyect\istockApp\back\istockBack\obj\Debug\net8.0\istockBack.pdb
 C:\Proyect\istockApp\back\istockBack\obj\Debug\net8.0\istockBack.genruntimeconfig.cache
 C:\Proyect\istockApp\back\istockBack\obj\Debug\net8.0\ref\istockBack.dll
+C:\Proyects\istockApp\back\istockBack\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

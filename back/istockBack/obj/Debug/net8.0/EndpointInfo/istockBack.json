@@ -624,6 +624,18 @@
         }
       }
     },
+    "/": {
+      "get": {
+        "tags": [
+          "istockBack"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "tags": [
