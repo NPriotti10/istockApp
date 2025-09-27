@@ -263,7 +263,6 @@ export default function Sales() {
 
         {/* Info + Paginación */}
         <div className="row row--split mt-16">
-          <span className="page-info">{pagInfo}</span>
           <Pagination
             page={page}
             pageSize={pageSize}

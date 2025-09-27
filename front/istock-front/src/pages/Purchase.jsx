@@ -232,7 +232,6 @@ export default function Purchase() {
 
         {/* Info + Pagination */}
         <div className="row row--split mt-16">
-          <span className="page-info">{pagInfo}</span>
           <Pagination
             page={page}
             pageSize={pageSize}
