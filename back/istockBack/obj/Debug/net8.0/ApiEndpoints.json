@@ -275,7 +275,7 @@
     "Parameters": [],
     "ReturnTypes": [
       {
-        "Type": "System.Collections.Generic.IEnumerable\u00601[[istockBack.Models.GastoFijo, istockBack, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[istockBack.Controllers.GastosFijosController\u002BGastoFijoDto, istockBack, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -294,20 +294,29 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "gasto",
-        "Type": "istockBack.Models.GastoFijo",
+        "Name": "dto",
+        "Type": "istockBack.Controllers.GastosFijosController\u002BCreateGastoFijoDto",
         "IsRequired": true
       }
     ],
     "ReturnTypes": [
       {
-        "Type": "istockBack.Models.GastoFijo",
+        "Type": "istockBack.Controllers.GastosFijosController\u002BGastoFijoDto",
         "MediaTypes": [
           "text/plain",
           "application/json",
           "text/json"
         ],
-        "StatusCode": 200
+        "StatusCode": 201
+      },
+      {
+        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 400
       }
     ]
   },
@@ -327,13 +336,22 @@
     ],
     "ReturnTypes": [
       {
-        "Type": "istockBack.Models.GastoFijo",
+        "Type": "istockBack.Controllers.GastosFijosController\u002BGastoFijoDto",
         "MediaTypes": [
           "text/plain",
           "application/json",
           "text/json"
         ],
         "StatusCode": 200
+      },
+      {
+        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 404
       }
     ]
   },
@@ -351,12 +369,36 @@
         "IsRequired": true
       },
       {
-        "Name": "gasto",
-        "Type": "istockBack.Models.GastoFijo",
+        "Name": "dto",
+        "Type": "istockBack.Controllers.GastosFijosController\u002BGastoFijoDto",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 204
+      },
+      {
+        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 400
+      },
+      {
+        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 404
+      }
+    ]
   },
   {
     "ContainingType": "istockBack.Controllers.GastosFijosController",
@@ -372,7 +414,22 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": []
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 204
+      },
+      {
+        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 404
+      }
+    ]
   },
   {
     "ContainingType": "istockBack.Controllers.ProductosController",

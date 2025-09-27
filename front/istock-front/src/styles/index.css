@@ -662,3 +662,97 @@ html, body, #root { height: 100%; margin: 0; }
   margin-top: 0 !important;
   padding-top: 0;
 }
+
+/* ===== Refinos comunes ===== */
+.page-wrap { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.page-sub { color: #6b7280; font-size: 13.5px; margin-top: -4px; }
+
+/* Tarjetas / contenedores */
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(30,41,59,0.06);
+}
+.card--soft { background: rgba(255,255,255,.9); backdrop-filter: blur(4px); }
+
+.card-pad { padding: 14px; }
+.card-pad-lg { padding: 18px; }
+
+/* Barra de acciones/ filtros (fila compacta) */
+.row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.row--split { justify-content: space-between; }
+
+/* Inputs y selects coherentes */
+.input, .select {
+  border: 1px solid #cbd5e1; background: #fff; border-radius: 8px;
+  height: 38px; padding: 0 12px; font-size: 14px; outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.input:focus, .select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+.input--sm, .select--sm { height: 34px; padding: 0 10px; }
+.input--wide { min-width: 260px; }
+.input--max360 { max-width: 360px; width: 100%; }
+
+/* Botones primarios / secundarios (reutiliza tu .add-product-btn/.action-btn) */
+.btn-primary {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: #2563eb; color: #fff; border: 1px solid #1e40af;
+  border-radius: 10px; font-weight: 700; padding: 10px 14px;
+  text-decoration: none; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+.btn-outline {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: #fff; color: #0f172a; border: 1px solid #d1d5db;
+  border-radius: 10px; font-weight: 700; padding: 9px 12px; cursor: pointer;
+}
+.btn-outline:hover { background: #f8fafc; }
+
+/* Chips / badges */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px; font-size: 12px;
+  border: 1px solid #e5e7eb; background: #f8fafc; color: #0f172a;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: 999px; font-size: 12px;
+  border: 1px solid #cfe0ff; background: #eaf1ff; color: #1e3a8a;
+}
+.dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+
+/* Tabla: header sticky y numerales con tabular-nums */
+.table-wrap.sticky thead th { position: sticky; top: 0; z-index: 1; }
+.td-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.td-nowrap { white-space: nowrap; }
+.td-truncate { max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Sección de “resumen / kpis” pequeña */
+.stat {
+  display: grid; gap: 8px;
+}
+.stat__row { display: flex; align-items: center; justify-content: space-between; }
+.stat__label { color: #64748b; font-size: 13px; }
+.stat__value { font-weight: 700; }
+
+/* Mini helper de margen */
+.mt-8 { margin-top: 8px; } .mt-12 { margin-top: 12px; } .mt-16 { margin-top: 16px; }
+.mb-8 { margin-bottom: 8px; } .mb-12 { margin-bottom: 12px; } .mb-16 { margin-bottom: 16px; }
+
+/* Sección superior unificada (título + subtítulo + botón) */
+.page-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+.page-title { font-size: 2rem; font-weight: 800; color: #22223b; letter-spacing: .2px; }
+.page-note { font-size: 13px; color: #6b7280; }
+
+/* Paginación: ya tenés, solo un helper para el info */
+.page-info { color: #6b7280; font-size: 13px; }
+
+/* Dropdown simple (AddSale buscador) */
+.dropdown { position: absolute; z-index: 10; background: #fff; border: 1px solid #d7deea; border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(16,24,40,.12); max-height: 260px; overflow: auto; width: 100%; margin-top: 6px; }
+.dropdown__item { padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+.dropdown__item--active { background: #eef2ff; }

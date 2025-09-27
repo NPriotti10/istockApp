@@ -152,130 +152,125 @@ export default function Sales() {
   };
 
   return (
-    <div className="body-bg" style={{ padding: 24 }}>
-      {/* Encabezado */}
-      <div
-        className="sales-header"
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}
-      >
-        <h1 className="products-title">VENTAS</h1>
-        <Link to="/ventas/nueva" className="add-product-btn">+ Nueva Venta</Link>
-      </div>
+    <div className="body-bg">
+      <div className="page-wrap">
+        {/* Encabezado */}
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">VENTAS</h1>
+            <div className="page-sub">Consulta, filtros y acciones</div>
+          </div>
+          <Link to="/ventas/nueva" className="btn-primary">＋ Nueva venta</Link>
+        </div>
 
-      {/* Barra superior: buscador + mes + page size */}
-      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
-        <input
-          type="text"
-          placeholder="Buscar por cliente..."
-          value={typed}
-          onChange={(e) => setTyped(e.target.value)}
-          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", width: 260 }}
-        />
-
-        {/* Filtro por mes (YYYY-MM) */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <label style={{ fontSize: 14, color: "#555" }}>Mes</label>
+        {/* Barra superior: buscador + mes + page size */}
+        <div className="card card-pad row mb-12">
           <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            style={{ padding: "8px", borderRadius: 6, border: "1px solid #ccc" }}
+            type="text"
+            placeholder="Buscar por cliente…"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            className="input input--max360"
           />
-          {month && (
-            <button
-              type="button"
-              onClick={() => setMonth("")}
-              style={{
-                padding: "8px 10px",
-                borderRadius: 6,
-                border: "1px solid #ddd",
-                background: "#fff",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
-              title="Quitar filtro de mes"
-            >
-              Limpiar
-            </button>
-          )}
-        </div>
 
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-          <span style={{ fontSize: 14, color: "#555" }}>Filas por página</span>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPage(1);
-              setPageSize(Number(e.target.value));
-            }}
-            style={{ padding: "8px", borderRadius: 6, border: "1px solid #ccc", width: 80 }}
-          >
-            {[5, 10, 20, 50].map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Tabla */}
-      <div className="products-table-container">
-        <table className="products-table">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Cliente</th>
-              <th>Precio Total (USD)</th>
-              <th>Ganancia USD</th>
-              <th>Ganancia ARS</th>
-              <th>Equipo parte de pago</th>
-              <th>Detalle</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={8} style={{ textAlign: "center", padding: 18 }}>Cargando...</td></tr>
-            ) : shownSales.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: "center", padding: 18 }}>Sin ventas</td></tr>
-            ) : (
-              shownSales.map((venta, idx) => {
-                const totalUSD = Number(venta?.precioTotal ?? 0);
-                const gainUSD = Number(venta?.gananciaTotal ?? 0);
-                const gainARS = (Number(venta?.valorDolar ?? 0) * gainUSD) || 0;
-
-                return (
-                  <tr key={venta.idVenta || `${page}-${idx}`}>
-                    <td>{fmtDateTime(venta?.fecha)}</td>
-                    <td>{venta?.cliente || "-"}</td>
-                    <td>{moneyUSD(totalUSD)}</td>
-                    <td>{moneyUSD(gainUSD)}</td>
-                    <td>{moneyARS(gainARS)}</td>
-                    <td>{venta?.equipoPartePago || "-"}</td>
-                    <td>
-                      <Link to={`/ventas/detalle/${venta.idVenta}`} className="action-btn">Ver detalle</Link>
-                    </td>
-                    <td>
-                      <Link to={`/ventas/editar/${venta.idVenta}`} className="action-btn edit">Editar</Link>
-                      <button className="action-btn delete" onClick={() => handleDelete(venta.idVenta)}>Eliminar</button>
-                    </td>
-                  </tr>
-                );
-              })
+          <div className="row" style={{ marginLeft: "auto" }}>
+            <label className="page-note">Mes</label>
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="input"
+            />
+            {month && (
+              <button
+                type="button"
+                onClick={() => setMonth("")}
+                className="btn-outline"
+                title="Quitar filtro de mes"
+              >
+                Limpiar
+              </button>
             )}
-          </tbody>
-        </table>
-      </div>
 
-      {/* Info + Paginación */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 14, color: "#555" }}>{pagInfo}</span>
-        <Pagination
-          page={page}
-          pageSize={pageSize}
-          total={shownTotal}
-          onPageChange={(p) => setPage(p)}
-        />
+            <span className="page-note">Filas</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPage(1);
+                setPageSize(Number(e.target.value));
+              }}
+              className="select select--sm"
+              style={{ width: 80 }}
+            >
+              {[5, 10, 20, 50].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Tabla */}
+        <div className="products-table-container table-wrap sticky">
+          <table className="products-table table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Precio Total (USD)</th>
+                <th>Ganancia USD</th>
+                <th>Ganancia ARS</th>
+                <th>Equipo parte de pago</th>
+                <th>Detalle</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: 18 }}>Cargando...</td></tr>
+              ) : shownSales.length === 0 ? (
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: 18 }}>Sin ventas</td></tr>
+              ) : (
+                shownSales.map((venta, idx) => {
+                  const totalUSD = Number(venta?.precioTotal ?? 0);
+                  const gainUSD = Number(venta?.gananciaTotal ?? 0);
+                  const gainARS = (Number(venta?.valorDolar ?? 0) * gainUSD) || 0;
+
+                  return (
+                    <tr key={venta.idVenta || `${page}-${idx}`}>
+                      <td className="td-nowrap">{fmtDateTime(venta?.fecha)}</td>
+                      <td className="td-truncate"><strong>{venta?.cliente || "-"}</strong></td>
+                      <td className="td-nowrap td-num">{moneyUSD(totalUSD)}</td>
+                      <td className="td-nowrap td-num">{moneyUSD(gainUSD)}</td>
+                      <td className="td-nowrap td-num">{moneyARS(gainARS)}</td>
+                      <td className="td-truncate">{venta?.equipoPartePago || "-"}</td>
+                      <td>
+                        <Link to={`/ventas/detalle/${venta.idVenta}`} className="action-btn">Ver detalle</Link>
+                      </td>
+                      <td>
+                        <div className="row">
+                          <Link to={`/ventas/editar/${venta.idVenta}`} className="action-btn edit">Editar</Link>
+                          <button className="action-btn delete" onClick={() => handleDelete(venta.idVenta)}>Eliminar</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Info + Paginación */}
+        <div className="row row--split mt-16">
+          <span className="page-info">{pagInfo}</span>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={shownTotal}
+            onPageChange={(p) => setPage(p)}
+          />
+        </div>
       </div>
     </div>
   );

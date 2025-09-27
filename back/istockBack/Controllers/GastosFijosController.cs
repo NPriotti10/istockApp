@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using istockBack.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,42 +18,141 @@ namespace istockBack.Controllers
             _context = context;
         }
 
+        // =========================
+        // DTOs
+        // =========================
+        public class GastoFijoDto
+        {
+            public int Id { get; set; }
+
+            [Required, MinLength(2)]
+            public string Nombre { get; set; } = string.Empty;
+
+            [Range(0.01, double.MaxValue, ErrorMessage = "El monto debe ser mayor a 0.")]
+            public decimal Monto { get; set; }
+
+            [Required]
+            public TipoGasto Tipo { get; set; } // Pesos / Dolares
+        }
+
+        public class CreateGastoFijoDto
+        {
+            [Required, MinLength(2)]
+            public string Nombre { get; set; } = string.Empty;
+
+            [Range(0.01, double.MaxValue, ErrorMessage = "El monto debe ser mayor a 0.")]
+            public decimal Monto { get; set; }
+
+            [Required]
+            public TipoGasto Tipo { get; set; }
+        }
+
+        // =========================
+        // Helpers de mapeo
+        // =========================
+        private static GastoFijoDto ToDto(GastoFijo e) => new()
+        {
+            Id = e.Id,
+            Nombre = e.Nombre,
+            Monto = e.Monto,
+            Tipo = e.Tipo
+        };
+
+        private static void ApplyDto(GastoFijo entity, GastoFijoDto dto)
+        {
+            entity.Nombre = dto.Nombre?.Trim() ?? entity.Nombre;
+            entity.Monto = dto.Monto;
+            entity.Tipo = dto.Tipo;
+        }
+
+        private static void ApplyCreateDto(GastoFijo entity, CreateGastoFijoDto dto)
+        {
+            entity.Nombre = dto.Nombre?.Trim() ?? string.Empty;
+            entity.Monto = dto.Monto;
+            entity.Tipo = dto.Tipo;
+        }
+
+        // =========================
+        // Endpoints
+        // =========================
+
+        // GET: api/GastosFijos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<GastoFijo>>> GetGastosFijos()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<ActionResult<IEnumerable<GastoFijoDto>>> GetGastosFijos()
         {
-            return await _context.GastoFijo.ToListAsync();
+            var list = await _context.GastoFijo
+                .AsNoTracking()
+                .OrderBy(g => g.Nombre)
+                .ToListAsync();
+
+            return Ok(list.Select(ToDto));
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<GastoFijo>> GetGastoFijo(int id)
+        // GET: api/GastosFijos/5
+        [HttpGet("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<GastoFijoDto>> GetGastoFijo(int id)
         {
-            var gasto = await _context.GastoFijo.FindAsync(id);
+            var gasto = await _context.GastoFijo.AsNoTracking().FirstOrDefaultAsync(g => g.Id == id);
             if (gasto == null) return NotFound();
-            return gasto;
+
+            return Ok(ToDto(gasto));
         }
 
+        // POST: api/GastosFijos
         [HttpPost]
-        public async Task<ActionResult<GastoFijo>> PostGastoFijo(GastoFijo gasto)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<GastoFijoDto>> PostGastoFijo([FromBody] CreateGastoFijoDto dto)
         {
-            _context.GastoFijo.Add(gasto);
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+            if (!Enum.IsDefined(typeof(TipoGasto), dto.Tipo))
+                return BadRequest("Tipo de gasto inválido.");
+
+            var entity = new GastoFijo();
+            ApplyCreateDto(entity, dto);
+
+            _context.GastoFijo.Add(entity);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetGastoFijo), new { id = gasto.Id }, gasto);
+
+            var result = ToDto(entity);
+            return CreatedAtAction(nameof(GetGastoFijo), new { id = entity.Id }, result);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutGastoFijo(int id, GastoFijo gasto)
+        // PUT: api/GastosFijos/5
+        [HttpPut("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> PutGastoFijo(int id, [FromBody] GastoFijoDto dto)
         {
-            if (id != gasto.Id) return BadRequest();
-            _context.Entry(gasto).State = EntityState.Modified;
+            if (id != dto.Id) return BadRequest("El id del URL no coincide con el del body.");
+            if (!ModelState.IsValid) return ValidationProblem(ModelState);
+
+            var entity = await _context.GastoFijo.FirstOrDefaultAsync(g => g.Id == id);
+            if (entity == null) return NotFound();
+
+            if (!Enum.IsDefined(typeof(TipoGasto), dto.Tipo))
+                return BadRequest("Tipo de gasto inválido.");
+
+            ApplyDto(entity, dto);
+
             await _context.SaveChangesAsync();
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
+        // DELETE: api/GastosFijos/5
+        [HttpDelete("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteGastoFijo(int id)
         {
             var gasto = await _context.GastoFijo.FindAsync(id);
             if (gasto == null) return NotFound();
+
             _context.GastoFijo.Remove(gasto);
             await _context.SaveChangesAsync();
             return NoContent();
