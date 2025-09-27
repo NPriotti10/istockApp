@@ -526,7 +526,22 @@ public class VentasController : ControllerBase
                 .Where(iv => EsAccesorioLocal(iv))
                 .Sum(iv => iv.PrecioTotal * v.ValorDolar ));
 
-        
+        decimal SumarGananciaUSDExclAcc(IEnumerable<Venta> vv) =>
+            vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
+                .Where(iv => !EsAccesorioLocal(iv))
+                .Sum(iv => iv.Ganancia));
+
+        decimal SumarGananciaARSExclAcc(IEnumerable<Venta> vv) =>
+            vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
+                .Where(iv => !EsAccesorioLocal(iv))
+                .Sum(iv => iv.Ganancia * v.ValorDolar));
+
+        decimal SumarGananciaAccesoriosARS(IEnumerable<Venta> vv) =>
+            vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
+                .Where(iv => EsAccesorioLocal(iv))
+                .Sum(iv => iv.Ganancia * v.ValorDolar));
+
+
 
         var ventasSemanalesRaw = ventasMes.Where(v => v.Fecha >= inicioSemanaUtc).ToList();
         var ventasMensualesRaw = ventasMes;
@@ -544,7 +559,13 @@ public class VentasController : ControllerBase
 
         var totalGastosFijos = gastosPesosARS + gastosDolaresUSD; // compatibilidad con tu front actual
 
+
         // ===== Ganancias (igual que antes) =====
+        var gananciaMensualUSD = SumarGananciaUSDExclAcc(ventasMensualesRaw);
+        var gananciaMensualAccesoriosARS = SumarGananciaAccesoriosARS(ventasMensualesRaw);
+
+
+        // ===== Bruto (igual que antes) =====
         var brutoSemanalUSD = SumarBrutoUSDExclAcc(ventasSemanalesRaw);
         var brutoSemanalARS = SumarBrutoARSExclAcc(ventasSemanalesRaw);
         var brutoSemanalAccesoriosARS = SumarBrutoAccesoriosARS(ventasSemanalesRaw);
@@ -554,8 +575,8 @@ public class VentasController : ControllerBase
         var brutoMensualAccesoriosARS = SumarBrutoAccesoriosARS(ventasMensualesRaw);
 
         // ===== NUEVO: aplicar regla de descuento por tipo (netos mensuales por bucket) =====
-        var gananciaMensualNoAccNetaUSD = brutoMensualUSD - gastosDolaresUSD;           // No-Accesorios (USD) - Gastos en USD
-        var gananciaMensualAccesoriosNetaARS = brutoMensualAccesoriosARS - gastosPesosARS; // Accesorios (ARS) - Gastos en ARS
+        var gananciaMensualNoAccNetaUSD = gananciaMensualUSD - gastosDolaresUSD;           // No-Accesorios (USD) - Gastos en USD
+        var gananciaMensualAccesoriosNetaARS = gananciaMensualAccesoriosARS - gastosPesosARS; // Accesorios (ARS) - Gastos en ARS
 
         // (dejamos el neto mensual USD "global" para compatibilidad, calculado como antes pero correcto por tipo)
         var gananciaMensualUSDNeta = gananciaMensualNoAccNetaUSD;
