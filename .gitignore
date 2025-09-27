@@ -1,0 +1,13 @@
+
+.vs/
+**/.vs/
+*.vsidx
+
+
+# Visual Studio cache
+.vs/
+**/.vs/
+*.vsidx
+*.suo
+*.db
+
