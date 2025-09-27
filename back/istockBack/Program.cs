@@ -39,6 +39,7 @@ builder.Services.AddControllers()
         o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -68,9 +69,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-/* ============== Hosted services ============== */
-builder.Services.AddHostedService<VentaBackupService>();
-builder.Services.AddHostedService<VentaBackupMensualService>();
+
 
 /* ================== DbContext ================== */
 builder.Services.AddDbContext<IstockDbContext>(options =>
@@ -86,15 +85,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         var passphrase = cfg["Jwt:Key"] ?? throw new InvalidOperationException("Falta Jwt:Key en appsettings.");
         var keyBytes = SHA256.HashData(Encoding.UTF8.GetBytes(passphrase));
 
+        var issuer = cfg["Jwt:Issuer"];
+        var audience = cfg["Jwt:Audience"];
+
         options.TokenValidationParameters = new()
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
+            // Si issuer/audience no están configurados, no los validamos (útil en dev/local)
+            ValidateIssuer = !string.IsNullOrWhiteSpace(issuer),
+            ValidateAudience = !string.IsNullOrWhiteSpace(audience),
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = cfg["Jwt:Issuer"],
-            ValidAudience = cfg["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
+            ValidIssuer = issuer,
+            ValidAudience = audience,
+            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+            ClockSkew = TimeSpan.FromMinutes(2) // tolerancia razonable para diferencias de reloj
         };
     });
 
@@ -117,7 +121,7 @@ builder.Services.Configure<GzipCompressionProviderOptions>(o =>
 var app = builder.Build();
 
 /* ===== Swagger controlado por config =====
-   En Azure poné App Setting: Swagger:Enabled = true (si querés exponerlo).
+   En Azure podés setear App Setting: Swagger:Enabled = true (si querés exponer UI).
    Por defecto: Dev = true, Prod = false. */
 var swaggerEnabled = builder.Configuration.GetValue("Swagger:Enabled", app.Environment.IsDevelopment());
 if (swaggerEnabled)
@@ -128,13 +132,15 @@ if (swaggerEnabled)
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "iStock API v1");
         c.RoutePrefix = "swagger";
     });
-    // Que la raíz no dé 404
+    // Redirigir la raíz a Swagger si está habilitado
     app.MapGet("/", () => Results.Redirect("/swagger"));
 }
 else
 {
+    // HSTS siempre en producción (más consistente)
     if (app.Environment.IsProduction()) app.UseHsts();
-    // Al menos algo útil en raíz si Swagger está off
+
+    // Respuesta simple en raíz si Swagger está deshabilitado
     app.MapGet("/", () => Results.Ok(new { ok = true, service = "iStock API" }));
 }
 
@@ -144,17 +150,35 @@ var fwd = new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
     RequireHeaderSymmetry = false
 };
-// Aceptar cualquier proxy (App Service front-ends)
 fwd.KnownNetworks.Clear();
 fwd.KnownProxies.Clear();
 app.UseForwardedHeaders(fwd);
 
-/* ============ Middlewares ============ */
-app.UseCors("AllowFrontend");
+/* ============ Orden de middlewares recomendado ============ */
+// 1) HTTPS / HSTS (HSTS ya se activa arriba cuando corresponde)
 app.UseHttpsRedirection();
+
+// 2) Compresión
 app.UseResponseCompression();
+
+// 3) Enrutamiento explícito para ubicar CORS en el lugar correcto
+app.UseRouting();
+
+// 4) CORS SIEMPRE entre UseRouting y UseAuthorization/UseEndpoints
+app.UseCors("AllowFrontend");
+
+// 5) AuthN / AuthZ
 app.UseAuthentication();
 app.UseAuthorization();
+
+/* ============ Migración automática en Development ============ */
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<IstockDbContext>();
+    // Intenta aplicar migraciones pendientes al iniciar en local (no en producción)
+    db.Database.Migrate();
+}
 
 /* ============ Endpoints ============ */
 app.MapGet("/healthz", () => Results.Ok(new { ok = true }));

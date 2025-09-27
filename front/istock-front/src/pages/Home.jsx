@@ -1,32 +1,46 @@
-// src/pages/Home.jsx
+﻿// src/pages/Home.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { getEstadisticas, getProductosBajoStock } from "../services/dashboard";
 import { getGastosFijos } from "../services/gastosFijos";
 import { getDolarValue } from "../services/dolar";
+import "../styles/Home.css";
 
 export default function Home() {
   const [ventasSemanales, setVentasSemanales] = useState([]);
   const [ventasMensuales, setVentasMensuales] = useState([]);
 
-  // Ganancias SIN accesorios
-  const [gananciaSemanal, setGananciaSemanal] = useState(0);         // USD
-  const [gananciaMensual, setGananciaMensual] = useState(0);         // USD
-  const [gananciaSemanalArs, setGananciaSemanalArs] = useState(0);   // ARS
-  const [gananciaMensualArs, setGananciaMensualArs] = useState(0);   // ARS
-  const [gananciaMensualUSDNeta, setGananciaMensualUSDNeta] = useState(0); // USD
+  // Ganancias sin accesorios (NO-ACC) - USD/ARS brutas
+  const [gananciaSemanal, setGananciaSemanal] = useState(0); // USD
+  const [gananciaMensual, setGananciaMensual] = useState(0); // USD
+  const [gananciaSemanalArs, setGananciaSemanalArs] = useState(0); // ARS
+  const [gananciaMensualArs, setGananciaMensualArs] = useState(0); // ARS
 
-  // Ganancias SOLO accesorios (ARS)
+  // Netos mensuales por bucket
+  const [gananciaMensualUSDNeta, setGananciaMensualUSDNeta] = useState(0); // Neto NO-ACC en USD (compat)
+  const [gananciaMensualNoAccNetaUSD, setGananciaMensualNoAccNetaUSD] = useState(0); // Nuevo
+  const [gananciaMensualAccesoriosNetaARS, setGananciaMensualAccesoriosNetaARS] = useState(0); // Nuevo
+
+  // Ganancias accesorios (ARS) brutas
   const [gananciaSemanalAccesoriosArs, setGananciaSemanalAccesoriosArs] = useState(0);
   const [gananciaMensualAccesoriosArs, setGananciaMensualAccesoriosArs] = useState(0);
 
+  // Ingresos (ventas brutas) accesorios con fallback de moneda
+  const [ingresosAccSemanal, setIngresosAccSemanal] = useState(0);
+  const [ingresosAccMensual, setIngresosAccMensual] = useState(0);
+  const [ingresosAccMoneda, setIngresosAccMoneda] = useState("USD");
+
+  // Gastos fijos por tipo
+  const [gastosUSD, setGastosUSD] = useState(0); // solo Dólares
+  const [gastosARS, setGastosARS] = useState(0); // solo Pesos
+  const [gastosLista, setGastosLista] = useState([]);
+
   // Otros
   const [productosBajoStock, setProductosBajoStock] = useState([]);
-  const [gastosFijos, setGastosFijos] = useState(0);
 
   const navigate = useNavigate();
 
-  // === helpers de formato ===
+  // Helpers de formato
   const fUSD = (n) =>
     new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -43,288 +57,239 @@ export default function Home() {
       maximumFractionDigits: 2,
     }).format(Number(n || 0));
 
-  // Cobertura de gastos: qué porcentaje de los gastos fijos cubre la ganancia mensual (sin accesorios)
-  const cobertura = useMemo(() => {
-    const g = Number(gastosFijos || 0);
+  // Cobertura de gastos por bucket
+  const coberturaNoAcc = useMemo(() => {
+    const g = Number(gastosUSD || 0);
     if (g <= 0) return 1;
-    return Math.max(0, Math.min(1, Number(gananciaMensual || 0) / g));
-  }, [gananciaMensual, gastosFijos]);
+    return Math.max(0, Math.min(1, Number(gananciaMensualNoAccNetaUSD || 0) / g));
+  }, [gananciaMensualNoAccNetaUSD, gastosUSD]);
+
+  const coberturaAcc = useMemo(() => {
+    const g = Number(gastosARS || 0);
+    if (g <= 0) return 1;
+    return Math.max(0, Math.min(1, Number(gananciaMensualAccesoriosNetaARS || 0) / g));
+  }, [gananciaMensualAccesoriosNetaARS, gastosARS]);
 
   useEffect(() => {
     getEstadisticas()
       .then((data) => {
-        setVentasSemanales(data.ventasSemanales || []);
-        setVentasMensuales(data.ventasMensuales || []);
+        setVentasSemanales(Array.isArray(data.ventasSemanales) ? data.ventasSemanales : []);
+        setVentasMensuales(Array.isArray(data.ventasMensuales) ? data.ventasMensuales : []);
 
-        setGananciaSemanal(data.gananciaSemanalUSD ?? 0);
-        setGananciaMensual(data.gananciaMensualUSD ?? 0);
-        setGananciaSemanalArs(data.gananciaSemanalARS ?? 0);
-        setGananciaMensualArs(data.gananciaMensualARS ?? 0);
-        setGananciaMensualUSDNeta(data.gananciaMensualUSDNeta ?? 0);
+        // Brutos NO-ACC
+        setGananciaSemanal(Number(data.gananciaSemanalUSD ?? 0));
+        setGananciaMensual(Number(data.gananciaMensualUSD ?? 0));
+        setGananciaSemanalArs(Number(data.gananciaSemanalARS ?? 0));
+        setGananciaMensualArs(Number(data.gananciaMensualARS ?? 0));
 
-        setGananciaSemanalAccesoriosArs(data.gananciaSemanalAccesoriosARS ?? 0);
-        setGananciaMensualAccesoriosArs(data.gananciaMensualAccesoriosARS ?? 0);
+        // Accesorios brutos
+        setGananciaSemanalAccesoriosArs(Number(data.gananciaSemanalAccesoriosARS ?? 0));
+        setGananciaMensualAccesoriosArs(Number(data.gananciaMensualAccesoriosARS ?? 0));
+
+        // Netos por bucket
+        setGananciaMensualUSDNeta(Number(data.gananciaMensualUSDNeta ?? 0)); // compat
+        setGananciaMensualNoAccNetaUSD(Number(data.gananciaMensualNoAccNetaUSD ?? data.gananciaMensualUSDNeta ?? 0));
+        setGananciaMensualAccesoriosNetaARS(Number(data.gananciaMensualAccesoriosNetaARS ?? 0));
+
+        // Gastos por tipo desde estadisticas (más confiable para cobertura)
+        setGastosUSD(Number(data.gastosDolaresUSD ?? 0));
+        setGastosARS(Number(data.gastosPesosARS ?? 0));
+
+        // Ingresos accesorios (moneda dinámica)
+        const semanalUSD = data.ventasAccesoriosSemanalUSD ?? data.ventasAccesoriosSemanalUsd;
+        const mensualUSD = data.ventasAccesoriosMensualUSD ?? data.ventasAccesoriosMensualUsd;
+
+        if (semanalUSD != null && mensualUSD != null) {
+          setIngresosAccSemanal(Number(semanalUSD) || 0);
+          setIngresosAccMensual(Number(mensualUSD) || 0);
+          setIngresosAccMoneda("USD");
+        } else {
+          setIngresosAccSemanal(Number(data.ventasAccesoriosSemanalARS ?? 0));
+          setIngresosAccMensual(Number(data.ventasAccesoriosMensualARS ?? 0));
+          setIngresosAccMoneda("ARS");
+        }
       })
-      .catch((err) => console.error("❌ Error estadísticas:", err.message));
+      .catch((err) => console.error("Error estadisticas:", err?.message || err));
 
     getDolarValue().catch(() => {});
     getProductosBajoStock()
       .then((data) => setProductosBajoStock(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("❌ Error stock bajo:", err.message));
+      .catch((err) => console.error("Error stock bajo:", err?.message || err));
 
+    // Lista de gastos (para el detalle con moneda por item)
     getGastosFijos()
       .then((rows) => {
-        const total = rows.reduce((acc, item) => acc + Number(item.monto ?? 0), 0);
-        setGastosFijos(total);
+        setGastosLista(Array.isArray(rows) ? rows : []);
       })
-      .catch((err) => console.error("❌ Error gastos fijos:", err.message));
+      .catch((err) => console.error("Error gastos fijos:", err?.message || err));
   }, []);
+
+  const fmtIngresosAcc = ingresosAccMoneda === "USD" ? fUSD : fARS;
+
+  // Para chips de cobertura
+  const toPercent = (x) => Math.min(100, Math.max(0, Math.round((Number(x || 0)) * 100)));
+  const covNoAccPct = toPercent(coberturaNoAcc);
+  const covAccPct = toPercent(coberturaAcc);
+  const tone = (pct) => (pct >= 90 ? "positive" : pct >= 60 ? "caution" : "default");
+
+  const lowStockCount = productosBajoStock.length;
 
   return (
     <div className="home">
-      <style>{`
-        /* ====== SCOPE SOLO EN HOME ====== */
-        .home{
-          --bg:#f6f8fb;
-          --card:#ffffff;
-          --text:#0f172a;
-          --muted:#64748b;
-          --border:#e6eaf0;
-          --brand:#2557d6;
-          --brand-weak:#e8eeff;
-          --success:#0ea57a;
-          --warning:#f59e0b;
-          --danger:#ef4444;
-          --radius:16px;
-          --shadow:0 2px 10px rgba(16,24,40,.06);
-          --shadow-strong:0 10px 26px rgba(16,24,40,.10);
-
-          max-width:1100px; margin:0 auto; padding:28px 20px 48px;
-          background:var(--bg); color:var(--text);
-          font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-        }
-        .home *{ box-sizing:border-box; }
-
-        /* Header */
-        .home .header{
-          display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:22px;
-        }
-        .home .title{font-size:28px; font-weight:800; margin:0}
-        .home .subtitle{margin:6px 0 0; color:var(--muted); font-size:14px}
-        .home .divider{height:1px; background:var(--border); margin:14px 0 8px}
-
-        /* KPI grid superior */
-        .home .kpi-grid{
-          display:grid; gap:14px;
-          grid-template-columns: repeat(4, minmax(0,1fr));
-        }
-        @media (max-width: 1000px){
-          .home .kpi-grid{grid-template-columns: repeat(2, minmax(0,1fr));}
-        }
-        @media (max-width: 560px){
-          .home .kpi-grid{grid-template-columns: 1fr;}
-        }
-
-        .home .kpi {
-          position:relative;
-          background: linear-gradient(180deg,#fff, #f9fbff);
-          border: 1px solid #d4dcf1;
-          border-radius: var(--radius);
-          box-shadow: var(--shadow);
-          padding: 14px 16px;
-          transition: transform .15s ease, box-shadow .15s ease, background .2s ease;
-          overflow:hidden;
-        }
-        .home .kpi:after{
-          content:"";
-          position:absolute; inset:auto -20px -20px auto; width:120px; height:120px;
-          background: radial-gradient(closest-side, rgba(37,87,214,.10), transparent 70%);
-          transform: rotate(25deg);
-        }
-        .home .kpi__top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-        .home .kpi__label{font-size:12px; color:var(--muted); letter-spacing:.2px}
-        .home .kpi__badge{
-          font-size:11px; color:#334155; background:#edf2ff;
-          padding:4px 8px; border-radius:999px; border:1px solid #dbe4ff;
-        }
-        .home .kpi__value{
-          font-size:28px; font-weight:800; letter-spacing:.2px; color:var(--brand); line-height:1.1;
-          margin-top:6px;
-        }
-        .home .kpi--click{cursor:pointer;}
-        .home .kpi--click:hover{transform:translateY(-2px); box-shadow:var(--shadow-strong)}
-
-        /* Secciones */
-        .home .section{margin-top:26px}
-        .home .section__title{
-          font-size:16px; font-weight:800; margin:0 0 12px; display:flex; align-items:center; gap:8px;
-        }
-        .home .pill{
-          width:8px; height:8px; border-radius:999px; background:var(--brand);
-          box-shadow:0 0 0 3px var(--brand-weak);
-        }
-        .home .pill--acc{ background:var(--warning); box-shadow:0 0 0 3px rgba(245,158,11,.18); }
-
-        /* Cards y métricas */
-        .home .grid-2{
-          display:grid; gap:14px;
-          grid-template-columns: repeat(2, minmax(0,1fr));
-        }
-        @media (max-width: 820px){
-          .home .grid-2{grid-template-columns: 1fr;}
-        }
-
-        .home .card {
-          background:var(--card);
-          border:1px solid #d0d7e3;
-          border-radius:var(--radius);
-          box-shadow:var(--shadow);
-          padding:16px;
-        }
-        .home .metric{
-          display:flex; align-items:center; justify-content:space-between; gap:12px;
-        }
-        .home .metric__label{font-size:13px; color:var(--muted)}
-        .home .metric__value{font-size:24px; font-weight:800; color:var(--brand)}
-        .home .metric--success .metric__value{color:var(--success)}
-        .home .metric--danger .metric__value{color:var(--danger)}
-        .home .metric--warn  .metric__value{color:var(--warning)}
-
-        /* Barra de cobertura */
-        .home .bar{
-          width:100%; height:10px; background:#eef2ff; border-radius:999px; overflow:hidden;
-          border:1px solid #dbe4ff;
-        }
-        .home .bar__fill{
-          height:100%; background:linear-gradient(90deg, #22c55e, #3b82f6);
-          border-radius:999px;
-          transition: width .3s ease;
-        }
-        .home .bar__label{
-          font-size:12px; color:var(--muted); margin-top:8px;
-        }
-
-        /* Tabla (scoped) */
-        .home .table-card { border: 1px solid #d0d7e3; box-shadow: var(--shadow); }
-        .home .table-wrap{max-height:380px; overflow:auto}
-        .home table{width:100%; border-collapse:separate; border-spacing:0}
-        .home thead th{
-          position:sticky; top:0; background:#f3f6fb; z-index:1;
-          font-size:13px; color:#334155; text-align:left; padding:12px 14px; border-bottom:1px solid var(--border);
-        }
-        .home tbody td{padding:12px 14px; border-bottom:1px solid var(--border); font-size:14px; color:#475569}
-        .home tbody tr:nth-child(even){background:#fafcff}
-        .home tbody tr:hover{background:#f5f8ff}
-
-        .home .chip{
-          display:inline-flex; align-items:center; gap:6px;
-          padding:3px 8px; border-radius:999px; font-size:12px; font-weight:700;
-        }
-        .home .chip--danger{ background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
-        .home .chip--warn{ background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; }
-
-        /* Helpers */
-        .home .muted{color:var(--muted)}
-      `}</style>
-
-      {/* Header */}
-      <div className="header">
-        <div>
-          <h1 className="title">Información general</h1>
-          <p className="subtitle">Resumen de ventas, ganancias y alertas de stock</p>
-        </div>
-      </div>
-      <div className="divider" />
-
-      {/* KPIs principales */}
-      <div className="kpi-grid">
-        <div className="kpi kpi--click" onClick={() => navigate("/ventas/periodo/semanal")}>
-          <div className="kpi__top">
-            <span className="kpi__label">Ventas semanales</span>
-            <span className="kpi__badge">Últimos 7 días</span>
-          </div>
-          <div className="kpi__value">{ventasSemanales.length}</div>
-        </div>
-
-        <div className="kpi kpi--click" onClick={() => navigate("/ventas/periodo/mensual")}>
-          <div className="kpi__top">
-            <span className="kpi__label">Ventas mensuales</span>
-            <span className="kpi__badge">Mes actual</span>
-          </div>
-          <div className="kpi__value">{ventasMensuales.length}</div>
-        </div>
-
-        <div className="kpi">
-          <div className="kpi__top">
-            <span className="kpi__label">Ganancia semanal</span>
-            <span className="kpi__badge">USD (sin accesorios)</span>
-          </div>
-          <div className="kpi__value">{fUSD(gananciaSemanal)}</div>
-        </div>
-
-        <div className="kpi">
-          <div className="kpi__top">
-            <span className="kpi__label">Ganancia mensual</span>
-            <span className="kpi__badge">USD (sin accesorios)</span>
-          </div>
-          <div className="kpi__value">{fUSD(gananciaMensual)}</div>
-        </div>
-      </div>
-
-      {/* Ganancias en ARS (sin accesorios) */}
-      <section className="section">
-        <h3 className="section__title">
-          <span className="pill" /> Ganancias (ARS) — sin accesorios
-        </h3>
-        <div className="grid-2">
-          <div className="card metric">
-            <span className="metric__label">Semanal</span>
-            <span className="metric__value">{fARS(gananciaSemanalArs)}</span>
-          </div>
-          <div className="card metric">
-            <span className="metric__label">Mensual</span>
-            <span className="metric__value">{fARS(gananciaMensualArs)}</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Ganancias accesorios (ARS) */}
-      <section className="section">
-        <h3 className="section__title">
-          <span className="pill pill--acc" /> Ganancias de Accesorios (ARS)
-        </h3>
-        <div className="grid-2">
-          <div className="card metric metric--warn">
-            <span className="metric__label">Semanal (solo accesorios)</span>
-            <span className="metric__value">{fARS(gananciaSemanalAccesoriosArs)}</span>
-          </div>
-          <div className="card metric metric--warn">
-            <span className="metric__label">Mensual (solo accesorios)</span>
-            <span className="metric__value">{fARS(gananciaMensualAccesoriosArs)}</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Neta vs Gastos */}
-      <section className="section">
-        <h3 className="section__title">
-          <span className="pill" /> Ganancia Neta vs Gastos (USD)
-        </h3>
-        <div className="grid-2">
-          <div className="card metric metric--success">
-            <span className="metric__label">Ganancia mensual neta</span>
-            <span className="metric__value">{fUSD(gananciaMensualUSDNeta)}</span>
-          </div>
-          <div className="card metric metric--danger">
-            <span className="metric__label">Gastos fijos del mes</span>
-            <span className="metric__value">{fUSD(gastosFijos)}</span>
+      <div className="home__wrap">
+        {/* Header */}
+        <div className="header">
+          <div>
+            <span className="header__tag">Dashboard </span>
+            <h1 className="title">INFORMACION GENERAL</h1>
           </div>
         </div>
 
-       
-      </section>
+        <div className="divider" />
 
-      {/* Stock bajo */}
+        {/* KPIs principales */}
+        <div className="kpi-grid">
+          <div className="kpi kpi--click" onClick={() => navigate("/ventas/periodo/semanal")}>
+            <div className="kpi__top">
+              <span className="kpi__label">Ventas semanales</span>
+              <span className="kpi__badge">Ultimos 7 dias</span>
+            </div>
+            <div className="kpi__value">{ventasSemanales.length}</div>
+          </div>
+
+          <div className="kpi kpi--click" onClick={() => navigate("/ventas/periodo/mensual")}>
+            <div className="kpi__top">
+              <span className="kpi__label">Ventas mensuales</span>
+              <span className="kpi__badge">Mes en curso</span>
+            </div>
+            <div className="kpi__value">{ventasMensuales.length}</div>
+          </div>
+
+          <div className="kpi ">
+            <div className="kpi__top">
+              <span className="kpi__label">Ingreso bruto semanal</span>
+              <span className="kpi__badge">USD sin accesorios</span>
+            </div>
+            <div className="kpi__value ">{fUSD(gananciaSemanal)}</div>
+          </div>
+
+          <div className="kpi">
+            <div className="kpi__top">
+              <span className="kpi__label">Ingreso bruto mensual</span>
+              <span className="kpi__badge">USD sin accesorios</span>
+            </div>
+            <div className="kpi__value">{fUSD(gananciaMensual)}</div>
+          </div>
+        </div>
+
+        {/* Ganancias en ARS (sin accesorios) */}
+        <section className="section">
+          <h3 className="section__title">
+            <span className="pill" /> INGRESOS BRUTOS (ARS)
+          </h3>
+          <p className="section__helper">Seguimiento de ventas brutas sin accesorios.</p>
+          <div className="grid-2">
+            <div className="card metric metric--blue">
+              <span className="metric__label">Semanal</span>
+              <span className="metric__value">{fARS(gananciaSemanalArs)}</span>
+            </div>
+            <div className="card metric metric--blue">
+              <span className="metric__label">Mensual</span>
+              <span className="metric__value">{fARS(gananciaMensualArs)}</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Ingresos (ventas brutas) de Accesorios */}
+        <section className="section">
+          <h3 className="section__title">
+            <span className="pill pill--acc" /> INGRESOS BRUTOS ACCESORIOS ({ingresosAccMoneda})
+          </h3>
+          <p className="section__helper">Seguimiento de ventas brutas para accesorios.</p>
+          <div className="grid-2">
+            <div className="card metric metric--blue">
+              <span className="metric__label">Semanal</span>
+              <span className="metric__value">{fARS(gananciaSemanalAccesoriosArs)}</span>
+            </div>
+            <div className="card metric metric--blue">
+              <span className="metric__label ">Mensual</span>
+              <span className="metric__value">{fARS(gananciaMensualAccesoriosArs)}</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Ganancia versus gastos (Netos por bucket) */}
+        <section className="section">
+          <h3 className="section__title">
+            <span className="pill" /> GANANCIAS NETAS POR BLOQUE
+          </h3>
+          <p className="section__helper">Neto = Ganancia bruta − Gastos del mismo tipo de moneda</p>
+          <div className="grid-2">
+            <div className="card metric metric--success">
+              <div className="metric__top">
+                <span className="metric__label">No-Accesorios (USD)</span>
+                
+              </div>
+              <span className="metric__value">{fUSD(gananciaMensualNoAccNetaUSD)}</span>
+              <span className="muted">Gastos USD: {fUSD(gastosUSD)}</span>
+            </div>
+
+            <div className="card metric metric--success">
+              <div className="metric__top">
+                <span className="metric__label">Accesorios (ARS)</span>
+                
+              </div>
+              <span className="metric__value">{fARS(gananciaMensualAccesoriosNetaARS)}</span>
+              <span className="muted">Gastos ARS: {fARS(gastosARS)}</span>
+            </div>
+          </div>
+        </section>
+
+        
+
+        {/* Gastos fijos */}
+        <section className="section">
+          <h3 className="section__title">
+            <span className="pill" /> GASTOS FIJOS (por moneda)
+          </h3>
+          <div className="grid-2">
+            <div className="card metric metric--danger">
+              <span className="metric__label">Total mensual USD (No-Acc)</span>
+              <span className="metric__value">{fUSD(gastosUSD)}</span>
+              <div className="spacer-8" />
+              <span className="metric__label">Total mensual ARS (Acc)</span>
+              <span className="metric__value">{fARS(gastosARS)}</span>
+            </div>
+
+            <div className="card">
+              <div className="list">
+                {gastosLista.length === 0 ? (
+                  <span className="muted">No registraste gastos fijos todavia.</span>
+                ) : (
+                  gastosLista.map((g) => {
+                    const tipo = (g?.tipo || "").toString();
+                    const isARS = tipo === "Pesos" || tipo === "0"; // por si viniera como número
+                    const val = Number(g?.monto ?? 0);
+                    return (
+                      <div key={g.id} className="list__row">
+                        <span className="list__name">{g.nombre}</span>
+                        <span className="list__amount">
+                          {isARS ? fARS(val) : fUSD(val)}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        
+
+        
+
+        {/* Stock bajo */}
       <section className="section">
         <h3 className="section__title">
           <span className="pill" /> Productos con bajo stock
@@ -365,6 +330,7 @@ export default function Home() {
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 }

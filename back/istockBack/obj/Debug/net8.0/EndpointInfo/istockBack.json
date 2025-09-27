@@ -452,7 +452,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/GastoFijo"
+                    "$ref": "#/components/schemas/GastoFijoDto"
                   }
                 }
               },
@@ -460,7 +460,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/GastoFijo"
+                    "$ref": "#/components/schemas/GastoFijoDto"
                   }
                 }
               },
@@ -468,7 +468,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/GastoFijo"
+                    "$ref": "#/components/schemas/GastoFijoDto"
                   }
                 }
               }
@@ -484,38 +484,58 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GastoFijo"
+                "$ref": "#/components/schemas/CreateGastoFijoDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/GastoFijo"
+                "$ref": "#/components/schemas/CreateGastoFijoDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/GastoFijo"
+                "$ref": "#/components/schemas/CreateGastoFijoDto"
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/GastoFijo"
+                  "$ref": "#/components/schemas/GastoFijoDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GastoFijo"
+                  "$ref": "#/components/schemas/GastoFijoDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GastoFijo"
+                  "$ref": "#/components/schemas/GastoFijoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -545,17 +565,37 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/GastoFijo"
+                  "$ref": "#/components/schemas/GastoFijoDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GastoFijo"
+                  "$ref": "#/components/schemas/GastoFijoDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GastoFijo"
+                  "$ref": "#/components/schemas/GastoFijoDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -581,24 +621,64 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GastoFijo"
+                "$ref": "#/components/schemas/GastoFijoDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/GastoFijo"
+                "$ref": "#/components/schemas/GastoFijoDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/GastoFijo"
+                "$ref": "#/components/schemas/GastoFijoDto"
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -618,8 +698,28 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -1261,7 +1361,33 @@
         },
         "additionalProperties": false
       },
-      "GastoFijo": {
+      "CreateGastoFijoDto": {
+        "required": [
+          "nombre",
+          "tipo"
+        ],
+        "type": "object",
+        "properties": {
+          "nombre": {
+            "minLength": 2,
+            "type": "string"
+          },
+          "monto": {
+            "minimum": 0.01,
+            "type": "number",
+            "format": "double"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoGasto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GastoFijoDto": {
+        "required": [
+          "nombre",
+          "tipo"
+        ],
         "type": "object",
         "properties": {
           "id": {
@@ -1269,12 +1395,16 @@
             "format": "int32"
           },
           "nombre": {
-            "type": "string",
-            "nullable": true
+            "minLength": 2,
+            "type": "string"
           },
           "monto": {
+            "minimum": 0.01,
             "type": "number",
             "format": "double"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoGasto"
           }
         },
         "additionalProperties": false
@@ -1332,6 +1462,33 @@
           }
         },
         "additionalProperties": false
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
       },
       "ProductoDto": {
         "type": "object",
@@ -1416,6 +1573,13 @@
           }
         },
         "additionalProperties": false
+      },
+      "TipoGasto": {
+        "enum": [
+          "Pesos",
+          "Dolares"
+        ],
+        "type": "string"
       },
       "VentaDto": {
         "type": "object",

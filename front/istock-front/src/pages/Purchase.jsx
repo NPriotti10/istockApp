@@ -132,118 +132,114 @@ export default function Purchase() {
   }, [page, pageSize, shownTotal]);
 
   return (
-    <div className="body-bg" style={{ padding: 24 }}>
-      {/* Encabezado */}
-      <div
-        className="sales-header"
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}
-      >
-        <h1 className="products-title">COMPRAS</h1>
-        <Link to="/compras/nueva" className="add-product-btn">+ Nueva Compra</Link>
-      </div>
+    <div className="body-bg">
+      <div className="page-wrap">
+        {/* Encabezado */}
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">COMPRAS</h1>
+            <div className="page-sub">Registro, filtros y acciones</div>
+          </div>
+          <Link to="/compras/nueva" className="btn-primary">＋ Nueva compra</Link>
+        </div>
 
-      {/* Barra superior: buscador + mes + page size */}
-      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
-        <input
-          type="text"
-          placeholder="Buscar por proveedor..."
-          value={typed}
-          onChange={(e) => setTyped(e.target.value)}
-          style={{ padding: "8px", borderRadius: "4px", border: "1px solid #ccc", width: "100%", maxWidth: 280 }}
-        />
-
-        {/* Filtro por mes (YYYY-MM) */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <label style={{ fontSize: 14, color: "#555" }}>Mes</label>
+        {/* Barra superior: buscador + mes + page size */}
+        <div className="card card-pad row mb-12">
           <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            style={{ padding: "8px", borderRadius: 6, border: "1px solid #ccc" }}
+            type="text"
+            placeholder="Buscar por proveedor…"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            className="input input--max360"
           />
-          {month && (
-            <button
-              type="button"
-              onClick={() => setMonth("")}
-              style={{
-                padding: "8px 10px",
-                borderRadius: 6,
-                border: "1px solid #ccc",
-                background: "#fff",
-                cursor: "pointer",
-                fontWeight: 600
-              }}
-              title="Quitar filtro de mes"
-            >
-              Limpiar mes
-            </button>
-          )}
-        </div>
 
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-          <span style={{ fontSize: 14, color: "#555" }}>Filas por página</span>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPage(1);
-              setPageSize(Number(e.target.value));
-            }}
-            style={{ padding: "8px", borderRadius: 6, border: "1px solid #ccc", width: 80 }}
-          >
-            {[5, 10, 20, 50].map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="products-table-container">
-        <table className="products-table">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Proveedor</th>
-              <th>Precio Total (USD)</th>
-              <th>Detalle</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={9} style={{ textAlign: "center", padding: 18 }}>Cargando...</td></tr>
-            ) : shownPurchases.length === 0 ? (
-              <tr><td colSpan={9} style={{ textAlign: "center", padding: 18 }}>Sin compras registradas</td></tr>
-            ) : (
-              shownPurchases.map((compra, idx) => (
-                <tr key={compra.idCompra || `${page}-${idx}`}>
-                  <td>{compra?.fecha ? new Date(compra.fecha).toLocaleDateString() : "-"}</td>
-                  <td>{compra?.proveedor || "-"}</td>
-                  <td>{moneyUSD(Number(compra?.precioTotal ?? 0))}</td>
-
-                  <td>
-                    <Link to={`/compras/detalle/${compra.idCompra}`} className="action-btn">Ver detalle</Link>
-                  </td>
-                  <td>
-                    <Link to={`/compras/editar/${compra.idCompra}`} className="action-btn edit">Editar</Link>
-                    <button className="action-btn delete" onClick={() => handleDelete(compra.idCompra)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))
+          <div className="row" style={{ marginLeft: "auto" }}>
+            <label className="page-note">Mes</label>
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="input"
+            />
+            {month && (
+              <button
+                type="button"
+                onClick={() => setMonth("")}
+                className="btn-outline"
+                title="Quitar filtro de mes"
+              >
+                Limpiar mes
+              </button>
             )}
-          </tbody>
-        </table>
-      </div>
 
-      {/* Info + Pagination */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
-        <small style={{ color: "#6b7280" }}>{pagInfo}</small>
-        <Pagination
-          page={page}
-          pageSize={pageSize}
-          total={shownTotal}
-          onPageChange={(p) => setPage(p)}
-        />
+            <span className="page-note">Filas</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPage(1);
+                setPageSize(Number(e.target.value));
+              }}
+              className="select select--sm"
+              style={{ width: 80 }}
+            >
+              {[5, 10, 20, 50].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Tabla */}
+        <div className="products-table-container table-wrap sticky">
+          <table className="products-table table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>Precio Total (USD)</th>
+                <th>Detalle</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={5} style={{ textAlign: "center", padding: 18 }}>Cargando...</td></tr>
+              ) : shownPurchases.length === 0 ? (
+                <tr><td colSpan={5} style={{ textAlign: "center", padding: 18 }}>Sin compras registradas</td></tr>
+              ) : (
+                shownPurchases.map((compra, idx) => (
+                  <tr key={compra.idCompra || `${page}-${idx}`}>
+                    <td className="td-nowrap">{compra?.fecha ? new Date(compra.fecha).toLocaleDateString() : "-"}</td>
+                    <td className="td-truncate"><strong>{compra?.proveedor || "-"}</strong></td>
+                    <td className="td-nowrap td-num">{moneyUSD(Number(compra?.precioTotal ?? 0))}</td>
+
+                    <td>
+                      <Link to={`/compras/detalle/${compra.idCompra}`} className="action-btn">Ver detalle</Link>
+                    </td>
+                    <td>
+                      <div className="row">
+                        <Link to={`/compras/editar/${compra.idCompra}`} className="action-btn edit">Editar</Link>
+                        <button className="action-btn delete" onClick={() => handleDelete(compra.idCompra)}>Eliminar</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Info + Pagination */}
+        <div className="row row--split mt-16">
+          <span className="page-info">{pagInfo}</span>
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={shownTotal}
+            onPageChange={(p) => setPage(p)}
+          />
+        </div>
       </div>
     </div>
   );

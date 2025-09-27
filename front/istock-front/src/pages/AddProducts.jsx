@@ -39,7 +39,7 @@ export default function AddProduct() {
   const esUsados = useMemo(() => {
     const cat = categorias.find((c) => Number(c.idCategoria) === Number(form.idCategoria));
     const nombre = (cat?.nombre || "").trim().toLowerCase();
-    return nombre === "usados" || nombre === "usado";
+    return nombre === "iphone usados";
   }, [categorias, form.idCategoria]);
 
   // Si es "Usados", fijar automáticamente: stockMinimo=0 y stockActual=1
