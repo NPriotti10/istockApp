@@ -3,6 +3,7 @@ import { getProductsPaged } from "../services/products";
 import { createSale } from "../services/sales";
 import { getDolarValue } from "../services/dolar";
 import { useNavigate } from "react-router-dom";
+import "../styles/AddSale.css"; // ⬅️ estilos específicos de esta página
 
 export default function AddSale() {
   const [productos, setProductos] = useState([]);
@@ -483,44 +484,71 @@ export default function AddSale() {
             )}
           </div>
 
-          {/* Ítems agregados */}
-          {items.map((item, index) => {
-            const prod = mapById[item.idProducto];
-            return (
-              <div key={index} style={{ marginTop: 12, borderBottom: "1px solid #e5e7eb", paddingBottom: 10 }}>
-                <div>
-                  <strong>{prod?.nombre}</strong>{" "}
-                  <small style={{ color: "#64748b" }}>(Stock: {prod?.stockActual})</small>
+          {/* Ítems agregados (fila compacta) */}
+          <div className="sale-items">
+            {items.map((item, index) => {
+              const prod = mapById[item.idProducto];
+              const stock = prod?.stockActual ?? 0;
+
+              return (
+                <div key={index} className="sale-item">
+                  <div className="si-name">
+                    <div className="si-title">{prod?.nombre || "Producto"}</div>
+                    <div className="si-sub">Stock: {stock}</div>
+                  </div>
+
+                  <div className="si-qty">
+                    <button
+                      type="button"
+                      className="btn-ghost-sm"
+                      onClick={() => handleDecrement(index)}
+                      aria-label="Decrementar"
+                    >
+                      −
+                    </button>
+
+                    <input
+                      className="qty-input"
+                      type="number"
+                      min={1}
+                      value={item.cantidad}
+                      onChange={(e) => handleChangeCantidad(index, e.target.value)}
+                    />
+
+                    <button
+                      type="button"
+                      className="btn-ghost-sm"
+                      onClick={() => handleIncrement(index)}
+                      aria-label="Incrementar"
+                      
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <div className="si-serial">
+                    <input
+                      className="serial-input"
+                      type="text"
+                      placeholder="Número de serie"
+                      value={item.numeroSerie || ""}
+                      onChange={(e) => handleSerieChange(index, e.target.value)}
+                    />
+                  </div>
+
+                  <div className="si-actions">
+                    <button
+                      type="button"
+                      className="btn-ghost-sm"
+                      onClick={() => handleRemoveItem(index)}
+                    >
+                     Eliminar
+                    </button>
+                  </div>
                 </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                  <button type="button" onClick={() => handleDecrement(index)} className="btn">-</button>
-                  <input
-                    className="input"
-                    type="number"
-                    min={1}
-                    value={item.cantidad}
-                    onChange={(e) => handleChangeCantidad(index, e.target.value)}
-                    style={{ width: 90, textAlign: "center" }}
-                  />
-                  <button type="button" onClick={() => handleIncrement(index)} className="btn">+</button>
-
-                  <input
-                    className="input"
-                    type="text"
-                    placeholder="Número de serie"
-                    value={item.numeroSerie || ""}
-                    onChange={(e) => handleSerieChange(index, e.target.value)}
-                    style={{ width: 320 }}
-                  />
-
-                  <button type="button" onClick={() => handleRemoveItem(index)} className="btn btn--ghost">
-                    ❌ Eliminar
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
 
           {/* Totales */}
           <div style={{ marginTop: 16, lineHeight: 1.7 }}>
@@ -532,7 +560,7 @@ export default function AddSale() {
           <button
             type="submit"
             disabled={saving}
-            className="add-product-btn"
+            className="btn-ghost-sm"
             style={{ marginTop: 16 }}
           >
             {saving ? "Guardando…" : "Guardar Venta"}

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("istockBack")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b70f59cedb0d685697b381e9e20e403a377aa6e7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8cd84a341917c266650192afd051dfa7a828b121")]
 [assembly: System.Reflection.AssemblyProductAttribute("istockBack")]
 [assembly: System.Reflection.AssemblyTitleAttribute("istockBack")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

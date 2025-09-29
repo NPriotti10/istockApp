@@ -1,0 +1,103 @@
+/* Contenedor general de ítems */
+.sale-items {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Cada producto en una sola fila */
+.sale-item {
+  display: grid;
+  grid-template-columns: 1.6fr auto 1.2fr auto; /* nombre | qty | serial | acciones */
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+/* Columna: nombre */
+.si-name {
+  min-width: 0; /* para truncado elegante */
+}
+.si-title {
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.si-sub {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Columna: cantidad */
+.si-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  line-height: 32px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  font-size: 18px;
+  cursor: pointer;
+}
+.icon-btn:active { transform: translateY(1px); }
+
+.qty-input {
+  width: 68px;
+  height: 34px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  text-align: center;
+  padding: 0 6px;
+}
+
+/* Columna: número de serie */
+.si-serial { width: 100%; }
+.serial-input {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 10px;
+}
+
+/* Columna: acciones */
+.si-actions { display: flex; justify-content: flex-end; }
+.btn-ghost-sm {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #ef4444;
+  background: #fff5f5;
+  color: #b91c1c;
+  cursor: pointer;
+}
+.btn-ghost-sm:hover {
+  background: #fee2e2;
+}
+
+/* Responsive: en pantallas chicas, que no se rompa */
+@media (max-width: 680px) {
+  .sale-item {
+    grid-template-columns: 1fr 1fr;            /* 2 columnas */
+    grid-template-areas:
+      "name name"
+      "qty serial"
+      "actions actions";
+    row-gap: 8px;
+  }
+  .si-name { grid-area: name; }
+  .si-qty { grid-area: qty; }
+  .si-serial { grid-area: serial; }
+  .si-actions { grid-area: actions; }
+}
