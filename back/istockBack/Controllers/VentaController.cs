@@ -598,8 +598,8 @@ public class VentasController : ControllerBase
         var ventasMensuales = VentasToDto(ventasMensualesRaw);
 
         // === NUEVO: Totales de VENTAS por bucket (SIN descontar gastos) ===
-        var totalVentasNoAccesoriosUSD = Math.Round(SumarBrutoUSDExclAcc(ventasMensualesRaw), 2);
-        var totalVentasAccesoriosARS = Math.Round(SumarBrutoAccesoriosARS(ventasMensualesRaw), 2);
+        var totalVentasNoAccesoriosUSD = Math.Round(SumarGananciaUSDExclAcc(ventasMensualesRaw), 2) - gastosDolaresUSD;
+        var totalVentasAccesoriosARS = Math.Round(SumarGananciaAccesoriosARS(ventasMensualesRaw), 2) - gastosPesosARS;
 
         return Ok(new
         {

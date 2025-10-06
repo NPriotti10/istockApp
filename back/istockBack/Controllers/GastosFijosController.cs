@@ -73,7 +73,7 @@ namespace istockBack.Controllers
         }
 
         // =========================
-        // Endpoints
+        // Endpoints principales
         // =========================
 
         // GET: api/GastosFijos
@@ -139,7 +139,6 @@ namespace istockBack.Controllers
                 return BadRequest("Tipo de gasto inválido.");
 
             ApplyDto(entity, dto);
-
             await _context.SaveChangesAsync();
             return NoContent();
         }
@@ -156,6 +155,62 @@ namespace istockBack.Controllers
             _context.GastoFijo.Remove(gasto);
             await _context.SaveChangesAsync();
             return NoContent();
+        }
+
+        // =========================
+        // NUEVO: Cerrar mes
+        // =========================
+        [HttpPost("cerrar-mes")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> CerrarMes()
+        {
+            var tz = TimeZoneInfo.FindSystemTimeZoneById(
+#if WINDOWS
+                "Argentina Standard Time"
+#else
+                "America/Argentina/Cordoba"
+#endif
+            );
+
+            var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+            var y = nowLocal.Year;
+            var m = nowLocal.Month;
+
+            var gastos = await _context.GastoFijo.ToListAsync();
+            if (!gastos.Any())
+                return Ok(new { message = "No hay gastos fijos para cerrar." });
+
+            var historicos = gastos.Select(g => new GastoFijoHistorico
+            {
+                Nombre = g.Nombre,
+                Monto = g.Monto,
+                Tipo = g.Tipo,
+                Año = y,
+                Mes = m
+            }).ToList();
+
+            _context.GastoFijoHistorico.AddRange(historicos);
+            _context.GastoFijo.RemoveRange(gastos);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = $"Gastos fijos cerrados y reiniciados correctamente ({m:00}/{y})." });
+        }
+
+        // =========================
+        // NUEVO: Histórico
+        // =========================
+        [HttpGet("historico")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetHistorico()
+        {
+            var historico = await _context.GastoFijoHistorico
+                .AsNoTracking()
+                .OrderByDescending(g => g.Año)
+                .ThenByDescending(g => g.Mes)
+                .ThenBy(g => g.Nombre)
+                .ToListAsync();
+
+            return Ok(historico);
         }
     }
 }

@@ -27,6 +27,8 @@ public partial class IstockDbContext : DbContext
     public virtual DbSet<Venta> Venta { get; set; }
     public virtual DbSet<GastoFijo> GastoFijo { get; set; }
 
+    public DbSet<GastoFijoHistorico> GastoFijoHistorico { get; set; }
+
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

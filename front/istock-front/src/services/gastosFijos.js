@@ -22,12 +22,25 @@ const normalizeOut = (row) => ({
   tipo: enumToString(row.tipo ?? row.Tipo ?? ""),
 });
 
+const normalizeHistoricoOut = (row) => ({
+  id: row.id ?? row.Id,
+  nombre: row.nombre ?? row.Nombre ?? "",
+  monto: Number(row.monto ?? row.Monto ?? 0),
+  tipo: enumToString(row.tipo ?? row.Tipo ?? ""),
+  mes: Number(row.mes ?? row.Mes ?? 0),
+  año: Number(row.año ?? row.Año ?? 0),
+});
+
 const normalizeIn = (g) => ({
   nombre: (g?.nombre ?? "").trim(),
   monto: Number(g?.monto ?? 0),
   // Forzamos exactamente "Pesos" o "Dolares"
   tipo: g?.tipo === TIPO_GASTO.Dolares ? TIPO_GASTO.Dolares : TIPO_GASTO.Pesos,
 });
+
+// ============================
+// CRUD actual
+// ============================
 
 // GET: /api/GastosFijos
 export async function getGastosFijos() {
@@ -56,4 +69,22 @@ export async function updateGastoFijo(id, gastoActualizado) {
   const { data } = await api.put(`/GastosFijos/${id}`, payload);
   // Algunos PUT devuelven vacío (204). Si vino algo, lo normalizamos; si no, retornamos payload.
   return data ? normalizeOut(data) : payload;
+}
+
+// ============================
+// NUEVO: Cierre mensual + Histórico
+// ============================
+
+// POST: /api/GastosFijos/cerrar-mes
+export async function cerrarMesGastos() {
+  const { data } = await api.post("/GastosFijos/cerrar-mes");
+  // { message: "..." }
+  return data;
+}
+
+// GET: /api/GastosFijos/historico
+export async function getGastosFijosHistorico() {
+  const { data } = await api.get("/GastosFijos/historico");
+  const arr = Array.isArray(data) ? data : [];
+  return arr.map(normalizeHistoricoOut);
 }

@@ -4,7 +4,9 @@ import {
   getGastosFijos,
   addGastoFijo,
   deleteGastoFijo,
+  getGastosFijosHistorico,
 } from "../services/gastosFijos";
+import api from "../services/api";
 
 export default function GastosFijos() {
   const [gastos, setGastos] = useState([]);
@@ -14,6 +16,12 @@ export default function GastosFijos() {
   const [loadingList, setLoadingList] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [closing, setClosing] = useState(false);
+
+  // Histórico
+  const [mesSeleccionado, setMesSeleccionado] = useState("");
+  const [historicoMes, setHistoricoMes] = useState([]);
+  const [loadingHist, setLoadingHist] = useState(false);
 
   // ---- helpers de formato ----
   const fUSD = (n) =>
@@ -82,7 +90,7 @@ export default function GastosFijos() {
       await addGastoFijo({
         nombre: nombre.trim(),
         monto: Number(monto),
-        tipo, // "Pesos" | "Dolares"
+        tipo,
       });
       setNombre("");
       setMonto("");
@@ -107,6 +115,62 @@ export default function GastosFijos() {
     }
   };
 
+  // ---- Cerrar mes ----
+  const cerrarMes = async () => {
+    if (!confirm("¿Deseás cerrar el mes actual? Los gastos se guardarán en el histórico y se reiniciarán.")) return;
+
+    setClosing(true);
+    try {
+      const res = await api.post("/GastosFijos/cerrar-mes");
+      alert(res?.data?.message || "✅ Gastos fijos cerrados correctamente.");
+      await load();
+    } catch (e) {
+      console.error("❌ Error al cerrar mes:", e);
+      alert("❌ No se pudo cerrar el mes.");
+    } finally {
+      setClosing(false);
+    }
+  };
+
+  // ---- Cargar histórico del mes seleccionado ----
+  const loadHistoricoMes = async (valor) => {
+    setMesSeleccionado(valor);
+    if (!valor) {
+      setHistoricoMes([]);
+      return;
+    }
+
+    setLoadingHist(true);
+    try {
+      const data = await getGastosFijosHistorico();
+      const [year, month] = valor.split("-").map(Number);
+      const filtrados = (Array.isArray(data) ? data : []).filter(
+        (g) =>
+          Number(g.año ?? g.Año) === year && Number(g.mes ?? g.Mes) === month
+      );
+      setHistoricoMes(filtrados);
+    } catch (e) {
+      console.error("❌ Error al cargar histórico del mes:", e);
+      setHistoricoMes([]);
+    } finally {
+      setLoadingHist(false);
+    }
+  };
+
+  const { histUSD, histARS } = useMemo(() => {
+    return (Array.isArray(historicoMes) ? historicoMes : []).reduce(
+      (acc, g) => {
+        const val = Number(g?.monto ?? g?.Monto ?? 0);
+        const t = (g?.tipo ?? g?.Tipo ?? "").toString();
+        const isARS = t === "Pesos" || t === "0";
+        if (isARS) acc.histARS += val;
+        else acc.histUSD += val;
+        return acc;
+      },
+      { histUSD: 0, histARS: 0 }
+    );
+  }, [historicoMes]);
+
   return (
     <div className="body-bg">
       <div className="page-wrap">
@@ -114,11 +178,21 @@ export default function GastosFijos() {
         <div className="page-header mb-12">
           <div>
             <h1 className="page-title">GASTOS MENSUALES</h1>
-            <div className="page-sub">Pesos → Accesorios | Dólares → No-Accesorios</div>
+            <div className="page-sub">
+              Pesos → Accesorios | Dólares → No-Accesorios
+            </div>
           </div>
+          <button
+            className="btn-primary"
+            onClick={cerrarMes}
+            disabled={closing}
+            style={{ opacity: closing ? 0.7 : 1 }}
+          >
+            {closing ? "Cerrando…" : "📅 Cerrar mes"}
+          </button>
         </div>
 
-        {/* Form debajo del título */}
+        {/* Form de alta */}
         <form onSubmit={handleSubmit} className="card card-pad row mb-12">
           <div className="row" style={{ flex: 1 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -156,8 +230,12 @@ export default function GastosFijos() {
                 value={tipo}
                 onChange={(e) => setTipo(e.target.value)}
               >
-                <option value="Pesos">Pesos (se descuenta de Accesorios)</option>
-                <option value="Dolares">Dólares (se descuenta de No-Accesorios)</option>
+                <option value="Pesos">
+                  Pesos (se descuenta de Accesorios)
+                </option>
+                <option value="Dolares">
+                  Dólares (se descuenta de No-Accesorios)
+                </option>
               </select>
             </div>
           </div>
@@ -177,17 +255,23 @@ export default function GastosFijos() {
         {err ? (
           <div
             className="card card-pad mb-12"
-            style={{ borderColor: "#FECACA", background: "#FEF2F2", color: "#991B1B" }}
+            style={{
+              borderColor: "#FECACA",
+              background: "#FEF2F2",
+              color: "#991B1B",
+            }}
           >
             {err}
           </div>
         ) : (
           <div className="page-note mb-12">
-            <strong>Regla:</strong> Gastos <em>en Pesos</em> se descuentan de <em>Accesorios</em> (ARS). Gastos <em>en Dólares</em> se descuentan de <em>No-Accesorios</em> (USD).
+            <strong>Regla:</strong> Gastos <em>en Pesos</em> se descuentan de{" "}
+            <em>Accesorios</em> (ARS). Gastos <em>en Dólares</em> se descuentan
+            de <em>No-Accesorios</em> (USD).
           </div>
         )}
 
-        {/* Tabla */}
+        {/* Tabla actual */}
         <div className="products-table-container table-wrap">
           <table className="products-table table">
             <thead>
@@ -208,7 +292,14 @@ export default function GastosFijos() {
                 </tr>
               ) : gastos.length === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: "center", padding: 18, color: "#6b7280" }}>
+                  <td
+                    colSpan={4}
+                    style={{
+                      textAlign: "center",
+                      padding: 18,
+                      color: "#6b7280",
+                    }}
+                  >
                     No hay gastos mensuales registrados.
                   </td>
                 </tr>
@@ -235,7 +326,10 @@ export default function GastosFijos() {
                           {isARS ? "Pesos" : "Dólares"}
                         </span>
                       </td>
-                      <td className="td-nowrap td-num" style={{ fontWeight: 600 }}>
+                      <td
+                        className="td-nowrap td-num"
+                        style={{ fontWeight: 600 }}
+                      >
                         {isARS ? fARS(montoN) : fUSD(montoN)}
                       </td>
                       <td>
@@ -253,26 +347,97 @@ export default function GastosFijos() {
               )}
             </tbody>
 
-            {/* Totales por moneda en el footer */}
             {!loadingList && gastos.length > 0 && (
               <tfoot>
                 <tr>
                   <td colSpan={2} style={{ textAlign: "right", fontWeight: 700 }}>
                     Total mensual USD (No-Acc)
                   </td>
-                  <td className="td-nowrap td-num" style={{ fontWeight: 700 }}>{fUSD(totalUSD)}</td>
+                  <td className="td-num td-nowrap">{fUSD(totalUSD)}</td>
                   <td />
                 </tr>
                 <tr>
                   <td colSpan={2} style={{ textAlign: "right", fontWeight: 700 }}>
                     Total mensual ARS (Acc)
                   </td>
-                  <td className="td-nowrap td-num" style={{ fontWeight: 700 }}>{fARS(totalARS)}</td>
+                  <td className="td-num td-nowrap">{fARS(totalARS)}</td>
                   <td />
                 </tr>
               </tfoot>
             )}
           </table>
+        </div>
+
+        {/* Selector y lista de histórico */}
+        <div className="card card-pad mt-16">
+          <h2 className="page-sub mb-8">📅 Consultar gastos de meses anteriores</h2>
+          <div className="row mb-12">
+            <input
+              type="month"
+              className="input"
+              value={mesSeleccionado}
+              onChange={(e) => loadHistoricoMes(e.target.value)}
+            />
+            {mesSeleccionado && (
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={() => loadHistoricoMes("")}
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+
+          {loadingHist ? (
+            <div>Cargando histórico…</div>
+          ) : !mesSeleccionado ? (
+            <div className="page-note">Seleccioná un mes para consultar.</div>
+          ) : historicoMes.length === 0 ? (
+            <div>No hay gastos registrados en ese mes.</div>
+          ) : (
+            <>
+              <table className="products-table table">
+                <thead>
+                  <tr>
+                    <th style={{ width: "60%" }}>Gasto</th>
+                    <th style={{ width: "20%" }}>Tipo</th>
+                    <th style={{ width: "20%" }}>Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historicoMes.map((g, idx) => {
+                    const tipoG = (g.tipo ?? g.Tipo ?? "").toString();
+                    const isARS = tipoG === "Pesos" || tipoG === "0";
+                    const montoN = Number(g.monto ?? g.Monto ?? 0);
+                    return (
+                      <tr key={idx}>
+                        <td>{g.nombre ?? g.Nombre ?? "-"}</td>
+                        <td>{isARS ? "Pesos" : "Dólares"}</td>
+                        <td className="td-num td-nowrap" style={{ fontWeight: 600 }}>
+                          {isARS ? fARS(montoN) : fUSD(montoN)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan={2} style={{ textAlign: "right", fontWeight: 700 }}>
+                      Total USD (No-Acc)
+                    </td>
+                    <td className="td-num td-nowrap">{fUSD(histUSD)}</td>
+                  </tr>
+                  <tr>
+                    <td colSpan={2} style={{ textAlign: "right", fontWeight: 700 }}>
+                      Total ARS (Acc)
+                    </td>
+                    <td className="td-num td-nowrap">{fARS(histARS)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </>
+          )}
         </div>
       </div>
     </div>
