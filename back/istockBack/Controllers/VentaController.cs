@@ -478,30 +478,37 @@ public class VentasController : ControllerBase
         return Ok(new { mensaje = "Venta eliminada correctamente." });
     }
 
-    
+
 
     // GET: api/ventas/estadisticas
     [HttpGet("estadisticas")]
-    public async Task<IActionResult> ObtenerEstadisticas()
+    public async Task<IActionResult> ObtenerEstadisticas([FromQuery] int? year, [FromQuery] int? month)
     {
         var tz = GetBsAsTz();
 
+        // === Mes objetivo (si no viene por query, usa el actual) ===
         var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
-        int diff = ((int)nowLocal.DayOfWeek + 6) % 7; // lunes = inicio
-        var inicioSemanaLocal = nowLocal.Date.AddDays(-diff);
-        var inicioMesLocal = new DateTime(nowLocal.Year, nowLocal.Month, 1);
+        int y = year ?? nowLocal.Year;
+        int m = month ?? nowLocal.Month;
 
+        var inicioMesLocal = new DateTime(y, m, 1, 0, 0, 0, DateTimeKind.Unspecified);
+        var finMesLocal = inicioMesLocal.AddMonths(1).AddTicks(-1);
+
+        var inicioSemanaLocal = nowLocal.Date.AddDays(-(((int)nowLocal.DayOfWeek + 6) % 7));
         var inicioSemanaUtc = LocalToUtc(inicioSemanaLocal, tz);
         var inicioMesUtc = LocalToUtc(inicioMesLocal, tz);
+        var finMesUtc = LocalToUtc(finMesLocal, tz);
 
+        // Ventas del MES seleccionado
         var ventasMes = await _context.Venta
             .AsNoTracking()
-            .Where(v => v.Fecha >= inicioMesUtc)
+            .Where(v => v.Fecha >= inicioMesUtc && v.Fecha <= finMesUtc)
             .Include(v => v.ItemVenta)
                 .ThenInclude(iv => iv.Producto)
                     .ThenInclude(p => p!.Categoria)
             .ToListAsync();
 
+        // === Helpers ===
         bool EsAccesorioLocal(ItemVenta iv)
         {
             var nombre = (iv.CategoriaNombre ?? iv.Producto?.Categoria?.Nombre ?? "")
@@ -510,7 +517,6 @@ public class VentasController : ControllerBase
             return nombre.Contains("accesor");
         }
 
-        // ===== Helpers existentes =====        
         decimal SumarBrutoUSDExclAcc(IEnumerable<Venta> vv) =>
             vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
                 .Where(iv => !EsAccesorioLocal(iv))
@@ -524,25 +530,26 @@ public class VentasController : ControllerBase
         decimal SumarBrutoAccesoriosARS(IEnumerable<Venta> vv) =>
             vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
                 .Where(iv => EsAccesorioLocal(iv))
-                .Sum(iv => iv.PrecioTotal * v.ValorDolar ));
+                .Sum(iv => iv.PrecioTotal * v.ValorDolar));
 
         decimal SumarGananciaUSDExclAcc(IEnumerable<Venta> vv) =>
-           vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
-               .Where(iv => !EsAccesorioLocal(iv))
-               .Sum(iv => iv.Ganancia));
+            vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
+                .Where(iv => !EsAccesorioLocal(iv))
+                .Sum(iv => iv.Ganancia));
 
-        
         decimal SumarGananciaAccesoriosARS(IEnumerable<Venta> vv) =>
             vv.Sum(v => (v.ItemVenta ?? Enumerable.Empty<ItemVenta>())
                 .Where(iv => EsAccesorioLocal(iv))
                 .Sum(iv => iv.Ganancia * v.ValorDolar));
 
+        // Para secciones semanales (sólo si el mes seleccionado coincide con el actual)
+        var ventasSemanalesRaw = (y == nowLocal.Year && m == nowLocal.Month)
+            ? ventasMes.Where(v => v.Fecha >= inicioSemanaUtc).ToList()
+            : new List<Venta>();
 
-
-        var ventasSemanalesRaw = ventasMes.Where(v => v.Fecha >= inicioSemanaUtc).ToList();
         var ventasMensualesRaw = ventasMes;
 
-        // ===== NUEVO: gastos fijos separados por tipo =====
+        // Gastos fijos (igual que antes)
         var gastosPesosARS = await _context.GastoFijo
             .Where(g => g.Tipo == TipoGasto.Pesos)
             .Select(g => (decimal?)g.Monto)
@@ -553,25 +560,24 @@ public class VentasController : ControllerBase
             .Select(g => (decimal?)g.Monto)
             .SumAsync() ?? 0m;
 
-        var totalGastosFijos = gastosPesosARS + gastosDolaresUSD; // compatibilidad con tu front actual
+        var totalGastosFijos = gastosPesosARS + gastosDolaresUSD;
 
-        // ===== Ganancias (igual que antes) =====
+        // Brutos
         var brutoSemanalUSD = SumarBrutoUSDExclAcc(ventasSemanalesRaw);
         var brutoSemanalARS = SumarBrutoARSExclAcc(ventasSemanalesRaw);
         var brutoSemanalAccesoriosARS = SumarBrutoAccesoriosARS(ventasSemanalesRaw);
 
-        var brutoMensualUSD = SumarBrutoUSDExclAcc(ventasMensualesRaw);
+        // ⚠️ Antes restabas gastos a los "brutos mensuales". Los dejo como estaban para compatibilidad…
+        var brutoMensualUSD = SumarBrutoUSDExclAcc(ventasMensualesRaw) - gastosDolaresUSD;
         var brutoMensualARS = SumarBrutoARSExclAcc(ventasMensualesRaw);
-        var brutoMensualAccesoriosARS = SumarBrutoAccesoriosARS(ventasMensualesRaw);
+        var brutoMensualAccesoriosARS = SumarBrutoAccesoriosARS(ventasMensualesRaw) - gastosPesosARS;
 
+        // Ganancias (como antes)
         var gananciaMensualUSD = SumarGananciaUSDExclAcc(ventasMensualesRaw);
         var gananciaMensualAccesoriosARS = SumarGananciaAccesoriosARS(ventasMensualesRaw);
 
-        // ===== NUEVO: aplicar regla de descuento por tipo (netos mensuales por bucket) =====
-        var gananciaMensualNoAccNetaUSD = gananciaMensualUSD - gastosDolaresUSD;           // No-Accesorios (USD) - Gastos en USD
-        var gananciaMensualAccesoriosNetaARS = gananciaMensualAccesoriosARS - gastosPesosARS; // Accesorios (ARS) - Gastos en ARS
-
-        // (dejamos el neto mensual USD "global" para compatibilidad, calculado como antes pero correcto por tipo)
+        var gananciaMensualNoAccNetaUSD = gananciaMensualUSD - gastosDolaresUSD;
+        var gananciaMensualAccesoriosNetaARS = gananciaMensualAccesoriosARS - gastosPesosARS;
         var gananciaMensualUSDNeta = gananciaMensualNoAccNetaUSD;
 
         List<VentaListaDto> VentasToDto(IEnumerable<Venta> src) =>
@@ -591,37 +597,36 @@ public class VentasController : ControllerBase
         var ventasSemanales = VentasToDto(ventasSemanalesRaw);
         var ventasMensuales = VentasToDto(ventasMensualesRaw);
 
-        
+        // === NUEVO: Totales de VENTAS por bucket (SIN descontar gastos) ===
+        var totalVentasNoAccesoriosUSD = Math.Round(SumarBrutoUSDExclAcc(ventasMensualesRaw), 2);
+        var totalVentasAccesoriosARS = Math.Round(SumarBrutoAccesoriosARS(ventasMensualesRaw), 2);
 
         return Ok(new
         {
             ventasSemanales,
             ventasMensuales,
 
-            // Brutos (como ya exponías)
+            // Brutos (compatibilidad)
             gananciaSemanalUSD = Math.Round(brutoSemanalUSD, 2),
             gananciaSemanalARS = Math.Round(brutoSemanalARS, 2),
             gananciaMensualUSD = Math.Round(brutoMensualUSD, 2),
             gananciaMensualARS = Math.Round(brutoMensualARS, 2),
-
             gananciaSemanalAccesoriosARS = Math.Round(brutoSemanalAccesoriosARS, 2),
             gananciaMensualAccesoriosARS = Math.Round(brutoMensualAccesoriosARS, 2),
 
-            // Gastos separados por tipo (NUEVO)
+            // Gastos
             gastosPesosARS = Math.Round(gastosPesosARS, 2),
             gastosDolaresUSD = Math.Round(gastosDolaresUSD, 2),
-
-            // Totales (para compatibilidad)
             totalGastosFijos = Math.Round(totalGastosFijos, 2),
 
-            // Netos mensuales por bucket (NUEVO)
+            // Netos mensuales por bucket (compatibilidad)
             gananciaMensualNoAccNetaUSD = Math.Round(gananciaMensualNoAccNetaUSD, 2),
             gananciaMensualAccesoriosNetaARS = Math.Round(gananciaMensualAccesoriosNetaARS, 2),
-
-            // Neto mensual "global" en USD (mantengo tu campo) → es el neto de no-accesorios
             gananciaMensualUSDNeta = Math.Round(gananciaMensualUSDNeta, 2),
 
-            
+            // === NUEVO: Totales que necesita la UI de Ventas ===
+            totalVentasNoAccesoriosUSD,
+            totalVentasAccesoriosARS
         });
     }
 
